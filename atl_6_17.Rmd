@@ -124,7 +124,7 @@ names(atl_merge4)[names(atl_merge4)=='area']<-'planarextent1dgeog'
 names(atl_merge4)[names(atl_merge4)=='abs_decimalLat']<-'absmidlat2d'
 names(atl_merge4)[names(atl_merge4)=='MBV_Area']<-'planarextent2d'
 
-write.csv(atl_merge4,"output/atlantic_range_june_17.csv")
+write.csv(atl_merge4,"output/atl_merge4.csv")
 
 ```
 
@@ -150,15 +150,11 @@ p2a<-ggplot(atl_merge4,aes(middepth2d,log(planarextent2d)))+
   geom_text(aes(label=ifelse(middepth2d==37|middepth2d==667.5,as.character(species1),'')),hjust=0,vjust=0)+
   labs(x = "mid depth of planar area",y="log planar range extent")
 
-
 plot_grid(p1a, p2a, align="v",ncol=1)
-
-dev.copy(pdf,"figs/atl_range_depth.pdf");
-dev.off();
 
 ```
 
-5. range size with latitude
+5. plot range size with latitude
 
 ```{r}
 #range size with latitude
@@ -194,6 +190,55 @@ plot_grid(p1b, p2b, p3b, align="v",ncol=1)
 
 6. richness analyses
 
+
 ```{r}
+attach(all_ready3)
+
+#subset atlantic from 2d richness dataset
+atl_rich_2d<-subset(all_ready3,ocean=="atlantic")
+
+#subset 1d 
+data <- subset(atl_merge4, select = c('species1','min_depth','max_depth'))
+
+atl_rich_1d <- data.frame(depth=as.numeric(),richness=as.numeric())
+
+for (i in 1:5467) {
+  ccc <- vector()  
+  for (k in 1:nrow(data)){
+    a<- if (i>=data$min_depth[k] & i<=data$max_depth[k]) {1} else {0}
+    ccc <- c(ccc,a)
+    
+    
+  }
+  atl_rich_1d[i,1] <- i
+  atl_rich_1d[i,2] <- sum(ccc)
+}
+
+species_ranges3<-data.frame(depth=integer(),max_rich=integer(),stringsAsFactors = F)
+
+species_sorted3<- atl_rich_2d[order(atl_rich_2d$depth),]
+
+for (i in 1:length(unique(species_sorted3$depth))) {
+  species_ranges3[i,1] <- as.numeric(unique(species_sorted3$depth)[i])#depth value
+  species_ranges3[i,2] <- as.numeric(max(species_sorted3[which(species_sorted3$depth == species_ranges3[i,1]),]$richness))
+}
+
+names(atl_rich_1d)[names(atl_rich_1d)=='richness']<-'richness1d'
+names(species_ranges3)[names(species_ranges3)=='max_rich']<-'richness2d'
+
+atl_depth_rich<-merge(atl_rich_1d,species_ranges3,by="depth")
+
+ggplot(atl_depth_rich,aes(depth))+
+  geom_line(aes(y=richness1d),color="blue",size=1)+
+  geom_line(aes(y=richness2d),color="red",size=1)+
+  xlab(label="Depth (m)")+
+  ylab("Richness")
+
+ggplot()+
+  geom_line(data=atl_rich_1d, aes(depth,richness, color="1D Bathymetric Extent"))+
+  geom_line(data=species_ranges3, aes(depth,max_rich, color="2D planar Extent"))+
+  xlim(0,6000)+
+  ylim(1,40)
+```
 
 
