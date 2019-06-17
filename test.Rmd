@@ -1,0 +1,27 @@
+---
+title: "bcrange"
+author: "jeremy"
+date: "17 June 2019"
+output: html_document
+---
+```{r}
+data <- attach(occurrence_data_2)
+
+
+
+
+hbvkgjh
+```
+
+
+
+```{r}
+
+jvcjhgfvgh
+
+
+
+
+```
+
+
