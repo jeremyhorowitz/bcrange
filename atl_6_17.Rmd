@@ -6,12 +6,17 @@ output:
   pdf_document: default
   html_document: default
 ---
+
+1. datasets needed to run analyses on atlantic ocean
+
 ```{r}
 attach(occurrence_data_2)
 attach(atlantic_occurrences)
 attach(atl_volumes)
 attach(atl_range_and_lat2)
 ```
+
+2. packages needed
 
 ```{r}
 install.packages("tidyverse")
@@ -31,6 +36,8 @@ library(sp)
 install.packages("quantreg")
 library(quantreg)
 ```
+
+3. analyses to produce range size with depth and latitude plots
 
 ```{r}
 #aggregate each column, grouped by species
@@ -101,6 +108,7 @@ atl_merge3<-atl_merge3 %>% mutate(abs_decimalLat=abs(decimalLat))
 #to add geog range to 1 and 2 d data
 atl_merge4<-merge(atl_merge3,atl_range_and_lat2,by="species1")
 
+#rename columns so you remember what they are
 names(atl_merge4)[names(atl_merge4)=='mid_depth']<-'middepth1d'
 names(atl_merge4)[names(atl_merge4)=='bathy_range']<-'depthrange1d'
 
@@ -116,10 +124,14 @@ names(atl_merge4)[names(atl_merge4)=='area']<-'planarextent1dgeog'
 names(atl_merge4)[names(atl_merge4)=='abs_decimalLat']<-'absmidlat2d'
 names(atl_merge4)[names(atl_merge4)=='MBV_Area']<-'planarextent2d'
 
+write.csv(atl_merge4,"output/atlantic_range_june_17.csv")
+
 ```
 
+4. range size with depth
+
 ```{r}
-#plotting range size with depth
+
 #1d atl depth range vs mid depth
 p1a<-ggplot(atl_merge4,aes(middepth1d,log(depthrange1d)),label=species1)+
   geom_point()+
@@ -138,10 +150,16 @@ p2a<-ggplot(atl_merge4,aes(middepth2d,log(planarextent2d)))+
   geom_text(aes(label=ifelse(middepth2d==37|middepth2d==667.5,as.character(species1),'')),hjust=0,vjust=0)+
   labs(x = "mid depth of planar area",y="log planar range extent")
 
-plot_grid(p1a, p2a, align="v",nrow=2)
 
+plot_grid(p1a, p2a, align="v",ncol=1)
+
+dev.copy(pdf,"figs/atl_range_depth.pdf");
+dev.off();
 
 ```
+
+5. range size with latitude
+
 ```{r}
 #range size with latitude
 
@@ -171,7 +189,11 @@ p3b<-ggplot(atl_merge4,aes(absmidlat2d,log(planarextent2d)))+
   geom_text(aes(label=ifelse(middepth2d==735.5|middepth2d==59.5,as.character(species1),'')),hjust=0,vjust=0)+
   labs(x = "mid lat of planar area",y="log planar range extent")
 
-plot_grid(p1b, p2b, p3b, align="v",nrow=3)
+plot_grid(p1b, p2b, p3b, align="v",ncol=1)
 ```
+
+6. richness analyses
+
+```{r}
 
 
