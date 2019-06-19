@@ -25,12 +25,12 @@ install.packages("plotly")
 library(plotly)
 install.packages("cowplot")
 library(cowplot)
-install.packages("ggforce")
-library(ggforce)
-install.packages("ggExtra")
-library(ggExtra)
-install.packages("ggalt")
-library(ggalt)
+#install.packages("ggforce")
+#library(ggforce)
+#install.packages("ggExtra")
+#library(ggExtra)
+#install.packages("ggalt")
+#library(ggalt)
 install.packages("sp")
 library(sp)
 install.packages("quantreg")
@@ -152,6 +152,8 @@ p2a<-ggplot(atl_merge4,aes(middepth2d,log(planarextent2d)))+
 
 plot_grid(p1a, p2a, align="v",ncol=1)
 
+ggsave(filename="atl_range_depth.tiff",path="figs/")
+
 ```
 
 5. plot range size with latitude
@@ -186,6 +188,8 @@ p3b<-ggplot(atl_merge4,aes(absmidlat2d,log(planarextent2d)))+
   labs(x = "mid lat of planar area",y="log planar range extent")
 
 plot_grid(p1b, p2b, p3b, align="v",ncol=1)
+
+ggsave(filename="atl_range_latitude.tiff",path="figs/")
 ```
 
 6. richness analyses
@@ -233,10 +237,37 @@ geom_line(aes(y=richness2d,color="2d"),size=1)+
 geom_line(aes(y=richness1d,color="1d"),size=1)+
 xlab(label="Depth (m)")+
 ylab("Richness")+
-theme_classic()+
+theme_classic()
+
+#to save figure and output
+
+ggsave(filename="atl_depth_rich.tiff",path="figs/")
 
 write.csv(atl_depth_rich,"output/atl_depth_rich.csv")
 
 ```
 
 
+```{r}
+
+attach(all_ready3)
+
+#subset atlantic from 2d richness dataset
+atl_rich_2d<-subset(all_ready3,ocean=="atlantic")
+
+#subset 1d 
+data <- subset(atl_merge4, select = c('species1','min_lat','max_lat'))
+
+atl_rich_1d_lat <- data.frame(lat=as.numeric(),richness=as.numeric())
+
+for (i in 1:5467) {
+  ccc <- vector()  
+  for (k in 1:nrow(data)){
+    a<- if (i>=data$min_lat[k] & i<=data$max_lat[k]) {1} else {0}
+    ccc <- c(ccc,a)
+    
+    
+  }
+  atl_rich_1d_lat[i,1] <- i
+  atl_rich_1d_lat[i,2] <- sum(ccc)
+}
