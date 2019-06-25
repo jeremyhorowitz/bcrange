@@ -14,6 +14,11 @@ attach(occurrence_data_2)
 attach(atlantic_occurrences)
 attach(atl_volumes)
 attach(atl_range_and_lat2)
+
+attach(indian_occurrences)
+attach(ind_volumes)
+attach(ind_range_and_lat2)
+
 ```
 
 2. packages needed
@@ -40,6 +45,7 @@ library(quantreg)
 3. analyses to produce range size with depth and latitude plots
 
 ```{r}
+#atl
 #aggregate each column, grouped by species
 atl_agg<-aggregate(atlantic_occurrences,by=list(atlantic_occurrences$species),FUN=median)
 
@@ -126,12 +132,99 @@ names(atl_merge4)[names(atl_merge4)=='MBV_Area']<-'planarextent2d'
 
 write.csv(atl_merge4,"output/atl_merge4.csv")
 
+#ind
+#aggregate each column, grouped by species
+ind_agg<-aggregate(indian_occurrences,by=list(indian_occurrences$species),FUN=median)
+
+#rename var1 as species
+names(ind_agg)[names(ind_agg)=='Group.1']<-'species1'
+
+#take raw occurrence data, count number of points per species
+ind_species_totals<-as.data.frame(table(indian_occurrences$species))
+
+#rename Group.1 as species1
+names(ind_species_totals)[names(ind_species_totals)=='Var1']<-'species1'
+
+#add occurrence count to aggregated data
+ind_merge1<-merge(ind_species_totals,ind_agg,by="species1")
+
+#remove species that have less than 11 occurrence points
+ind_merge1_10<-subset(ind_merge1,Freq>9)
+
+#change volumes table name from species to species1
+names(ind_volumes)[names(ind_volumes)=='species']<-'species1'
+
+#add 2d volume data to the above
+ind_merge2<-merge(ind_merge1_10,ind_volumes,by="species1")
+
+#remove columns so only species range size freq la long depth
+ind_merge2[5:8]<-list(NULL)
+ind_merge2[6:80]<-list(NULL)
+ind_merge2[7:12]<-list(NULL)
+
+#to compare 2d analysis to 1d analysis, first create empty dataframe to insert min and max range of depth, lat, and long per species
+one_d <- data.frame(species = character(), 
+                    min_depth = integer(), 
+                    max_depth = integer(),
+                    min_lat=integer(),
+                    max_lat=integer(),
+                    stringsAsFactors = FALSE)
+
+#to sort the data by species, and then by the other factors
+species_sorted_ind <- indian_occurrences[order(indian_occurrences$species, indian_occurrences$depth, indian_occurrences$decimalLat),]
+
+#for loop: go through species_sorted and pull out the min and max depth, lat, to create the 1d ranges 
+for (i in 1:length(unique(species_sorted_ind$species))) {
+  one_d[i,1] <- as.character(unique(species_sorted_ind$species)[i]) # species name
+  one_d[i,2] <- as.numeric(min(species_sorted_ind[which(species_sorted_ind$species == one_d[i,1]),]$depth)) #min depth
+  one_d[i,3] <- as.numeric(max(species_sorted_ind[which(species_sorted_ind$species == one_d[i,1]),]$depth)) #max depth
+  one_d[i,4] <- as.numeric(min(species_sorted_ind[which(species_sorted_ind$species == one_d[i,1]),]$decimalLat)) #min lat
+  one_d[i,5] <- as.numeric(max(species_sorted_ind[which(species_sorted_ind$species == one_d[i,1]),]$decimalLat)) #max lat
+}
+
+#to calculate mid depth and bathy range size per species and add to one_d table
+one_d<-one_d %>% mutate(mid_depth=(min_depth + max_depth)/2)
+one_d<-one_d %>% mutate(bathy_range=(max_depth - min_depth))
+
+#to calculate mid lat and lat range size per species and add to one_d table
+one_d<-one_d %>% mutate(mid_lat=(min_lat + max_lat)/2)
+one_d<-one_d %>% mutate(lat_range=(max_lat - min_lat))
+
+#rename 'species' to species1' in one_d dataset, to merge datasets
+names(one_d)[names(one_d)=='species']<-'species1'
+ind_merge3<-merge(ind_merge2,one_d,by="species1")
+
+#to calculate abs value of lat values
+ind_merge3<-ind_merge3 %>% mutate(abs_mid_lat=abs(mid_lat))
+ind_merge3<-ind_merge3 %>% mutate(abs_decimalLat=abs(decimalLat))
+
+#to add geog range to 1 and 2 d data
+ind_merge4<-merge(ind_merge3,ind_range_and_lat2,by="species1")
+
+#rename columns so you remember what they are
+names(ind_merge4)[names(ind_merge4)=='mid_depth']<-'middepth1d'
+names(ind_merge4)[names(ind_merge4)=='bathy_range']<-'depthrange1d'
+
+names(ind_merge4)[names(ind_merge4)=='depth']<-'middepth2d'
+names(ind_merge4)[names(ind_merge4)=='MBV_Area']<-'planarextent2d'
+
+names(ind_merge4)[names(ind_merge4)=='abs_mid_lat']<-'absmidlat1d'
+names(ind_merge4)[names(ind_merge4)=='lat_range']<-'latrange1d'
+
+names(ind_merge4)[names(ind_merge4)=='abs_central_y']<-'absmidlat1dgeog'
+names(ind_merge4)[names(ind_merge4)=='area']<-'planarextent1dgeog'
+
+names(ind_merge4)[names(ind_merge4)=='abs_decimalLat']<-'absmidlat2d'
+names(ind_merge4)[names(ind_merge4)=='MBV_Area']<-'planarextent2d'
+
+write.csv(ind_merge4,"output/ind_merge4.csv")
+
 ```
 
 4. range size with depth
 
 ```{r}
-
+#atl
 #1d atl depth range vs mid depth
 p1a<-ggplot(atl_merge4,aes(middepth1d,log(depthrange1d)),label=species1)+
   geom_point()+
@@ -154,11 +247,35 @@ plot_grid(p1a, p2a, align="v",ncol=1)
 
 ggsave(filename="atl_range_depth.tiff",path="figs/")
 
+#ind
+#1d ind depth range vs mid depth
+p1a<-ggplot(ind_merge4,aes(middepth1d,log(depthrange1d)),label=species1)+
+  geom_point()+
+  stat_quantile(quantiles=c(.01,.99))+
+  theme_classic()+
+  xlim(0,5500)+
+  geom_text(aes(label=ifelse(middepth2d>1,as.character(species1),'')),hjust=0,vjust=0)+
+  labs(x = "mid depth of depth range",y="log depth range extent")
+
+#2d atl area vs mid depth
+p2a<-ggplot(ind_merge4,aes(middepth2d,log(planarextent2d)))+
+  geom_point()+
+  stat_quantile(quantiles=c(.01,.99))+
+  theme_classic()+
+  xlim(0,5500)+
+  geom_text(aes(label=ifelse(middepth2d>1,as.character(species1),'')),hjust=0,vjust=0)+
+  labs(x = "mid depth of planar area",y="log planar range extent")
+
+plot_grid(p1a, p2a, align="v",ncol=1)
+
+ggsave(filename="ind_range_depth.tiff",path="figs/")
+
 ```
 
 5. plot range size with latitude
 
 ```{r}
+#atl
 #range size with latitude
 
 p1b<-ggplot(atl_merge4,aes(absmidlat1d,log(latrange1d)))+
@@ -190,12 +307,46 @@ p3b<-ggplot(atl_merge4,aes(absmidlat2d,log(planarextent2d)))+
 plot_grid(p1b, p2b, p3b, align="v",ncol=1)
 
 ggsave(filename="atl_range_latitude.tiff",path="figs/")
+
+#ind
+#range size with latitude
+
+p1b<-ggplot(ind_merge4,aes(absmidlat1d,log(latrange1d)))+
+  geom_point()+
+  stat_quantile(quantiles=c(.01,.99))+
+  theme_classic()+
+  xlim(0,70)+
+  geom_text(aes(label=ifelse(middepth2d>1,as.character(species1),'')),hjust=0,vjust=0)+
+  labs(x = "mid lat of lat range",y="log lat range extent")
+
+#1d geog extent vs mid lat
+p2b<-ggplot(ind_merge4,aes(absmidlat1dgeog,log(planarextent1dgeog)))+
+  geom_point()+
+  stat_quantile(quantiles=c(.01,.99))+
+  theme_classic()+
+  xlim(0,70)+
+  geom_text(aes(label=ifelse(middepth2d>1,as.character(species1),'')),hjust=0,vjust=0)+
+  labs(x = "mid lat of geographic range",y="log geographic range extent")
+
+#2d atl area vs mid lat
+p3b<-ggplot(ind_merge4,aes(absmidlat2d,log(planarextent2d)))+
+  geom_point()+
+  stat_quantile(quantiles=c(.01,.99))+
+  theme_classic()+
+  xlim(0,70)+
+  geom_text(aes(label=ifelse(middepth2d>1,as.character(species1),'')),hjust=0,vjust=0)+
+  labs(x = "mid lat of planar area",y="log planar range extent")
+
+plot_grid(p1b,p2b, p3b,ncol=1)
+
+ggsave(filename="ind_range_latitude.tiff",path="figs/")
 ```
 
 6. richness analyses
 
 
 ```{r}
+#atl
 attach(all_ready3)
 
 #subset atlantic from 2d richness dataset
@@ -233,6 +384,56 @@ names(species_ranges3)[names(species_ranges3)=='max_rich']<-'richness2d'
 atl_depth_rich<-merge(atl_rich_1d,species_ranges3,by="depth")
 
 ggplot(atl_depth_rich,aes(depth))+
+geom_line(aes(y=richness2d,color="2d"),size=1)+ 
+geom_line(aes(y=richness1d,color="1d"),size=1)+
+xlab(label="Depth (m)")+
+ylab("Richness")+
+theme_classic()
+
+#to save figure and output
+
+ggsave(filename="atl_depth_rich.tiff",path="figs/")
+
+write.csv(atl_depth_rich,"output/atl_depth_rich.csv")
+
+#ind
+attach(all_ready3)
+
+#subset atlantic from 2d richness dataset
+ind_rich_2d<-subset(all_ready3,ocean=="indian")
+
+#subset 1d 
+data <- subset(ind_merge4, select = c('species1','min_depth','max_depth'))
+
+ind_rich_1d <- data.frame(depth=as.numeric(),richness=as.numeric())
+
+for (i in 1:5336) {
+  ccc <- vector()  
+  for (k in 1:nrow(data)){
+    a<- if (i>=data$min_depth[k] & i<=data$max_depth[k]) {1} else {0}
+    ccc <- c(ccc,a)
+    
+    
+  }
+  ind_rich_1d[i,1] <- i
+  ind_rich_1d[i,2] <- sum(ccc)
+}
+
+species_ranges3<-data.frame(depth=integer(),max_rich=integer(),stringsAsFactors = F)
+
+species_sorted3<- ind_rich_2d[order(ind_rich_2d$depth),]
+
+for (i in 1:length(unique(species_sorted3$depth))) {
+  species_ranges3[i,1] <- as.numeric(unique(species_sorted3$depth)[i])#depth value
+  species_ranges3[i,2] <- as.numeric(max(species_sorted3[which(species_sorted3$depth == species_ranges3[i,1]),]$richness))
+}
+
+names(ind_rich_1d)[names(ind_rich_1d)=='richness']<-'richness1d'
+names(species_ranges3)[names(species_ranges3)=='max_rich']<-'richness2d'
+
+ind_depth_rich<-merge(ind_rich_1d,species_ranges3,by="depth")
+
+ggplot(ind_depth_rich,aes(depth))+
 geom_line(aes(y=richness2d,color="2d"),size=1)+ 
 geom_line(aes(y=richness1d,color="1d"),size=1)+
 xlab(label="Depth (m)")+
