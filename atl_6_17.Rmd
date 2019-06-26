@@ -573,6 +573,9 @@ ind_lat_rich<-ind_july19_rich_raw_lat2 %>%
 
 ind_lat_merge<-merge(ind_lat_rich,ind_2d_1d_merge_cleaned,by="y")
 
+lat
+
+ind_lat<-ind_
 
 ggplot(ind_lat_merge,aes(y))+
 geom_line(aes(y=n_distinct(species),color="lat"),size=1)+ 
