@@ -512,6 +512,7 @@ species_ranges<-round(species_ranges,2)
   ylim(0,60)+
   labs(x ="latitude",y="1d geographic extent richness")
   
+
 #to pull out max rich per lat value for p3
 #create empty dataframe to insert max  richness per lat
 species_ranges2<-data.frame(y.y=integer(),max_rich=integer(),stringsAsFactors = F)
@@ -559,10 +560,106 @@ ggsave(filename="atl_lat_rich.tiff",path="figs/")
 
 write.csv(atl_lat_rich_combine2,"output/atl_lat_rich_combine2.csv")
 
-#ind
+#ind___________________________________________
 #to get lat extent richness
+
+attach(ind_july19_rich_raw_lat3)
+attach(ind_2d_1d_merge_cleaned)
+
+ind_lat_rich<-ind_july19_rich_raw_lat3 %>%
+  group_by(y) %>%
+  summarise(n_distinct(species))
+
+
+ind_geog<-c("y","rich_1d_geog")
+ind_2d<-c("y","rich_2d")
+
+
+ind_geog_subset<-ind_2d_1d_merge_cleaned[ind_geog]
+ind_2d_subset<-ind_2d_1d_merge_cleaned[ind_2d]
+
+names(ind_lat_rich)[names(ind_lat_rich)=='n_distinct(species)']<-'richness_lat'
+names(ind_geog_subset)[names(ind_geog_subset)=='rich_1d_geog']<-'richness'
+names(ind_2d_subset)[names(ind_2d_subset)=='rich_2d']<-'richness'
+
+#to take max rich of ind geog
+#create empty dataframe to insert max  richness per lat
+species_ranges2<-data.frame(y=integer(),richness_geog=integer(),stringsAsFactors = F)
+
+#to sort data by lat
+species_sorted2<- ind_geog_subset[order(ind_geog_subset$y),]
+
+#for loop: go through maxi and pull out the max richness for each lat 
+for (i in 1:length(unique(species_sorted2$y))) {
+  species_ranges2[i,1] <- as.numeric(unique(species_sorted2$y)[i])#lat value
+  species_ranges2[i,2] <- as.numeric(max(species_sorted2[which(species_sorted2$y == species_ranges2[i,1]),]$richness))
+}
+
+#to take max rich of ind 2d
+#create empty dataframe to insert max  richness per lat
+species_ranges3<-data.frame(y=integer(),richness_2d=integer(),stringsAsFactors = F)
+
+#to sort data by lat
+species_sorted3<- ind_2d_subset[order(ind_2d_subset$y),]
+
+#for loop: go through maxi and pull out the max richness for each lat 
+for (i in 1:length(unique(species_sorted3$y))) {
+  species_ranges3[i,1] <- as.numeric(unique(species_sorted3$y)[i])#lat value
+  species_ranges3[i,2] <- as.numeric(max(species_sorted3[which(species_sorted3$y == species_ranges3[i,1]),]$richness))
+}
+
+
+
+ind_lat_rich_combine<-merge(ind_lat_rich,species_ranges2,by="y")
+ind_lat_rich_combine2<-merge(ind_lat_rich_combine,species_ranges3,by="y")
+
+ggplot(ind_lat_rich_combine2,aes(y))+
+geom_line(aes(y=richness_2d,color="richness_2d"),size=1)+  
+geom_line(aes(y=richness_geog,color="richness_geog"),size=1)+
+geom_line(aes(y=richness_lat,color="richness_lat"),size=1)+
+xlab(label="latitude (degrees)")+
+ylab("Richness")+
+theme_classic()
+
+#to save figure and output
+
+ggsave(filename="ind_lat_rich.tiff",path="figs/")
+
+write.csv(ind_lat_rich_combine2,"output/ind_lat_rich_combine2.csv")
+
+
+```
+
+
+
+
+
+
+
+
+```{r}
+#ind code that was redone above. keeping this in case i need to go back to basics
+names(ind_lat_rich)[names(ind_lat_rich)=='max_rich']<-'richness_lat'
+names(species_ranges2)[names(species_ranges2)=='max_rich']<-'richness_geog'
+names(species_ranges3)[names(species_ranges3)=='max_rich']<-'richness_2d'
+
+ind_lat_rich_combine<-merge(species_ranges,species_ranges2,by="y")
+ind_lat_rich_combine2<-merge(ind_lat_rich_combine,species_ranges3,by="y")
+
+ggplot(ind_lat_rich_combine2,aes(y))+
+geom_line(aes(y=richness_2d,color="richness_2d"),size=1)+  
+geom_line(aes(y=richness_geog,color="richness_geog"),size=1)+
+geom_line(aes(y=richness_lat,color="richness_lat"),size=1)+
+xlab(label="latitude (degrees)")+
+ylab("Richness")+
+theme_classic()
+
+
+
+
 attach(ind_july19_rich_raw_lat2)
 attach(ind_2d_1d_merge_cleaned)
+
 
 ind_lat_rich<-ind_july19_rich_raw_lat2 %>%
   group_by(y) %>%
@@ -573,14 +670,69 @@ ind_lat_rich<-ind_july19_rich_raw_lat2 %>%
 
 ind_lat_merge<-merge(ind_lat_rich,ind_2d_1d_merge_cleaned,by="y")
 
-lat
+ind_lat<-c("y","n_distinct(species)")
+ind_geog<-c("y","rich_1d_geog")
+ind_2d<-c("y","rich_2d")
 
-ind_lat<-ind_
 
-ggplot(ind_lat_merge,aes(y))+
-geom_line(aes(y=n_distinct(species),color="lat"),size=1)+ 
-geom_line(aes(y=rich_1d_geog,color="geog"),size=1)+
-geom_line(aes(y=rich_2d,color="planar"),size=1)+
+ind_lat_subset<-ind_lat_merge[ind_lat]
+ind_geog_subset<-ind_lat_merge[ind_geog]
+ind_2d_subset<-ind_lat_merge[ind_2d]
+
+names(ind_lat_subset)[names(ind_lat_subset)=='n_distinct(species)']<-'richness'
+names(ind_geog_subset)[names(ind_geog_subset)=='rich_1d_geog']<-'richness'
+names(ind_2d_subset)[names(ind_2d_subset)=='rich_2d']<-'richness'
+
+#to take max rich of ind lat
+#create empty dataframe to insert max  richness per lat
+species_ranges<-data.frame(y=integer(),max_rich=integer(),stringsAsFactors = F)
+
+#to sort data by lat
+species_sorted<- ind_lat_subset[order(ind_lat_subset$y),]
+
+#for loop: go through maxi and pull out the max richness for each lat 
+for (i in 1:length(unique(species_sorted$y))) {
+  species_ranges[i,1] <- as.numeric(unique(species_sorted$y)[i])#lat value
+  species_ranges[i,2] <- as.numeric(max(species_sorted[which(species_sorted$y == species_ranges[i,1]),]$richness))
+}
+
+#to take max rich of ind geog
+#create empty dataframe to insert max  richness per lat
+species_ranges2<-data.frame(y=integer(),max_rich=integer(),stringsAsFactors = F)
+
+#to sort data by lat
+species_sorted2<- ind_geog_subset[order(ind_geog_subset$y),]
+
+#for loop: go through maxi and pull out the max richness for each lat 
+for (i in 1:length(unique(species_sorted2$y))) {
+  species_ranges2[i,1] <- as.numeric(unique(species_sorted2$y)[i])#lat value
+  species_ranges2[i,2] <- as.numeric(max(species_sorted2[which(species_sorted2$y == species_ranges2[i,1]),]$richness))
+}
+
+#to take max rich of ind 2d
+#create empty dataframe to insert max  richness per lat
+species_ranges3<-data.frame(y=integer(),max_rich=integer(),stringsAsFactors = F)
+
+#to sort data by lat
+species_sorted3<- ind_2d_subset[order(ind_2d_subset$y),]
+
+#for loop: go through maxi and pull out the max richness for each lat 
+for (i in 1:length(unique(species_sorted3$y))) {
+  species_ranges3[i,1] <- as.numeric(unique(species_sorted3$y)[i])#lat value
+  species_ranges3[i,2] <- as.numeric(max(species_sorted3[which(species_sorted3$y == species_ranges3[i,1]),]$richness))
+}
+
+names(species_ranges)[names(species_ranges)=='max_rich']<-'richness_lat'
+names(species_ranges2)[names(species_ranges2)=='max_rich']<-'richness_geog'
+names(species_ranges3)[names(species_ranges3)=='max_rich']<-'richness_2d'
+
+ind_lat_rich_combine<-merge(species_ranges,species_ranges2,by="y")
+ind_lat_rich_combine2<-merge(ind_lat_rich_combine,species_ranges3,by="y")
+
+ggplot(ind_lat_rich_combine2,aes(y))+
+geom_line(aes(y=richness_2d,color="richness_2d"),size=1)+  
+geom_line(aes(y=richness_geog,color="richness_geog"),size=1)+
+geom_line(aes(y=richness_lat,color="richness_lat"),size=1)+
 xlab(label="latitude (degrees)")+
 ylab("Richness")+
 theme_classic()
@@ -675,7 +827,7 @@ theme_classic()
 
 ggsave(filename="atl_lat_rich.tiff",path="figs/")
 
-write.csv(atl_lat_rich_combine2,"output/atl_lat_rich_combine2.csv")
+write.csv(ind_lat_merge,"output/ind_lat_merge.csv")
 
 
 ```
