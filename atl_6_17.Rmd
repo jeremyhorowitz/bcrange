@@ -7,21 +7,37 @@ output:
   html_document: default
 ---
 
-1. datasets needed to run analyses on atlantic ocean
+1. Datasets below are required for these analyses, seperated by ocean: Atlantic, Indian, Pacific:
 
 ```{r}
 attach(occurrence_data_2)
 attach(atlantic_occurrences)
 attach(atl_volumes)
 attach(atl_range_and_lat2)
-
-attach(indian_occurrences)
-attach(ind_volumes)
-attach(ind_range_and_lat2)
+attach(all_ready3)
+attach(atl_richness_1)
+attach(atl_richness_raw)
 
 ```
 
-2. packages needed
+```{r}
+attach(occurrence_data_2)
+attach(indian_occurrences)
+attach(ind_volumes)
+attach(ind_range_and_lat2)
+attach(ind_2d_1d_merge)
+attach(ind_july19_rich_raw_lat3)
+attach(ind_2d_1d_merge_cleaned)
+
+```
+
+```{r}
+attach(occurrence_data_2)
+attach(pacific_occurrences2)
+attach(pac_merged_volumes_cleaned)
+```
+
+2. Load these packages needed for these analyses:
 
 ```{r}
 install.packages("tidyverse")
@@ -30,22 +46,23 @@ install.packages("plotly")
 library(plotly)
 install.packages("cowplot")
 library(cowplot)
+install.packages("sp")
+library(sp)
+install.packages("quantreg")
+library(quantreg)
 #install.packages("ggforce")
 #library(ggforce)
 #install.packages("ggExtra")
 #library(ggExtra)
 #install.packages("ggalt")
 #library(ggalt)
-install.packages("sp")
-library(sp)
-install.packages("quantreg")
-library(quantreg)
 ```
 
 3. analyses to produce range size with depth and latitude plots
+3a. Atlantic Ocean
 
 ```{r}
-#atl
+
 #aggregate each column, grouped by species
 atl_agg<-aggregate(atlantic_occurrences,by=list(atlantic_occurrences$species),FUN=median)
 
@@ -132,7 +149,13 @@ names(atl_merge4)[names(atl_merge4)=='MBV_Area']<-'planarextent2d'
 
 write.csv(atl_merge4,"output/atl_merge4.csv")
 
-#ind
+
+```
+
+3. analyses to produce range size with depth and latitude plots
+3b. Indian ocean
+```{r}
+
 #aggregate each column, grouped by species
 ind_agg<-aggregate(indian_occurrences,by=list(indian_occurrences$species),FUN=median)
 
@@ -144,7 +167,6 @@ ind_species_totals<-as.data.frame(table(indian_occurrences$species))
 
 #rename Group.1 as species1
 names(ind_species_totals)[names(ind_species_totals)=='Var1']<-'species1'
-
 #add occurrence count to aggregated data
 ind_merge1<-merge(ind_species_totals,ind_agg,by="species1")
 
@@ -221,10 +243,90 @@ write.csv(ind_merge4,"output/ind_merge4.csv")
 
 ```
 
-4. range size with depth
+3. analyses to produce range size with depth and latitude plots
+3c. Pacific ocean
+
+this is where i am up to. i need to redo all maps. 
+1 subset data for pac left and right that has fix points by species listed in pac_merge 3
+
+2 follow methods 
 
 ```{r}
-#atl
+#aggregate each column, grouped by species
+pac_agg<-aggregate(pacific_occurrences2,by=list(pacific_occurrences2$species),FUN=median)
+
+#rename var1 as species
+names(pac_agg)[names(pac_agg)=='Group.1']<-'species1'
+
+#take raw occurrence data, count number of points per species
+pac_species_totals<-as.data.frame(table(pacific_occurrences2$species))
+
+#rename Group.1 as species1
+names(pac_species_totals)[names(pac_species_totals)=='Var1']<-'species1'
+
+#add occurrence count to aggregated data
+pac_merge1<-merge(pac_species_totals,pac_agg,by="species1")
+
+#remove species that have less than 11 occurrence points
+pac_merge1_10<-subset(pac_merge1,Freq>9)
+
+#change volumes table name from species to species1
+names(pac_merged_volumes_cleaned)[names(pac_merged_volumes_cleaned)=='species']<-'species1'
+
+#add volume data to the above
+pac_merge2<-merge(pac_merge1_10,pac_merged_volumes_cleaned,by="species1")
+
+#remove columns so only species range size freq la long depth
+pac_merge2[3:4]<-list(NULL)
+pac_merge2[5:8]<-list(NULL)
+pac_merge2[6:80]<-list(NULL)
+pac_merge2[8:10]<-list(NULL)
+
+#to compare 2d analysis to 1d analysis, first create empty dataframe to insert min and max range of depth, lat, and long per species
+one_d <- data.frame(species = character(), 
+                    min_depth = integer(), 
+                    max_depth = integer(),
+                    min_lat=integer(),
+                    max_lat=integer(),
+                    stringsAsFactors = FALSE)
+
+#to sort the data by species, and then by the other factors
+species_sorted_pac <- pacific_occurrences2[order(pacific_occurrences2$species, pacific_occurrences2$depth, pacific_occurrences2$decimalLat),]
+
+#for loop: go through species_sorted and pull out the min and max depth, lat, to create the 2d ranges 
+for (i in 1:length(unique(species_sorted_pac$species))) {
+  one_d[i,1] <- as.character(unique(species_sorted_pac$species)[i]) # species name
+  one_d[i,2] <- as.numeric(min(species_sorted_pac[which(species_sorted_pac$species == one_d[i,1]),]$depth)) #min depth
+  one_d[i,3] <- as.numeric(max(species_sorted_pac[which(species_sorted_pac$species == one_d[i,1]),]$depth)) #max depth
+  one_d[i,4] <- as.numeric(min(species_sorted_pac[which(species_sorted_pac$species == one_d[i,1]),]$decimalLat)) #min lat
+  one_d[i,5] <- as.numeric(max(species_sorted_pac[which(species_sorted_pac$species == one_d[i,1]),]$decimalLat)) #max lat
+}
+
+#to calculate mid depth and bathy range size per species and add to one_d table
+one_d<-one_d %>% mutate(mid_depth=(min_depth + max_depth)/2)
+one_d<-one_d %>% mutate(bathy_range=(max_depth - min_depth))
+
+#to calculate mid lat and lat range size per species and add to one_d table
+one_d<-one_d %>% mutate(mid_lat=(min_lat + max_lat)/2)
+one_d<-one_d %>% mutate(lat_range=(max_lat - min_lat))
+
+#rename 'species' to species1' in one_d dataset, to merge datasets
+names(one_d)[names(one_d)=='species']<-'species1'
+pac_merge3<-merge(pac_merge2,one_d,by="species1")
+
+#to calculate abs value of lat values
+pac_merge3<-pac_merge3 %>% mutate(abs_mid_lat=abs(mid_lat))
+pac_merge3<-pac_merge3 %>% mutate(abs_decimalLat=abs(decimalLat))
+
+write.csv(pac_merge3,"output/pac_merge3.csv")
+
+```
+
+4. produce figures for range size with depth
+4a. Atlantic Ocean
+
+```{r}
+
 #1d atl depth range vs mid depth
 p1a<-ggplot(atl_merge4,aes(middepth1d,log(depthrange1d)),label=species1)+
   geom_point()+
@@ -246,8 +348,13 @@ p2a<-ggplot(atl_merge4,aes(middepth2d,log(planarextent2d)))+
 plot_grid(p1a, p2a, align="v",ncol=1)
 
 ggsave(filename="atl_range_depth.tiff",path="figs/")
+```
 
-#ind
+4. produce figures for range size with depth
+4b. Indian Ocean
+
+```{r}
+
 #1d ind depth range vs mid depth
 p1a<-ggplot(ind_merge4,aes(middepth1d,log(depthrange1d)),label=species1)+
   geom_point()+
@@ -272,10 +379,36 @@ ggsave(filename="ind_range_depth.tiff",path="figs/")
 
 ```
 
-5. plot range size with latitude
+4. produce figures for range size with depth
+4c. Pacific Ocean
 
 ```{r}
-#atl
+#1d pac depth range vs mid depth
+p1<-ggplot(pac_merge3,aes(log(mid_depth),log(bathy_range)),label=species1)+
+  geom_point()+
+  stat_quantile(quantiles=c(.01,.99))+
+  theme_classic()+
+  geom_text(aes(label=ifelse(depth==68.5|depth==784.75|depth==4005,as.character(species1),'')),hjust=0,vjust=0)+
+  labs(x = " log mid depth of depth range",y="log depth range extent")
+
+#2d pac area vs mid depth
+p2<-ggplot(pac_merge3,aes(log(depth),log(area)))+
+  geom_point()+
+  stat_quantile(quantiles=c(.01,.99))+
+  theme_classic()+
+  geom_text(aes(label=ifelse(depth==68.5|depth==784.75|depth==4005,as.character(species1),'')),hjust=0,vjust=0)+
+  labs(x = " log mid depth of planar area",y="log planar range extent")
+
+plot_grid(p1, p2, align="v",nrow=2)
+
+ggsave(filename="pac_range_depth.tiff",path="figs/")
+
+```
+5. produce figures for range size with latitude
+5a. Atlantic Ocean
+
+```{r}
+
 #range size with latitude
 
 p1b<-ggplot(atl_merge4,aes(absmidlat1d,log(latrange1d)))+
@@ -308,8 +441,12 @@ plot_grid(p1b, p2b, p3b, align="v",ncol=1)
 
 ggsave(filename="atl_range_latitude.tiff",path="figs/")
 
-#ind
-#range size with latitude
+```
+
+5. produce figures for range size with latitude
+5b. Indian Ocean
+
+```{r}
 
 p1b<-ggplot(ind_merge4,aes(absmidlat1d,log(latrange1d)))+
   geom_point()+
@@ -342,11 +479,37 @@ plot_grid(p1b,p2b, p3b,ncol=1)
 ggsave(filename="ind_range_latitude.tiff",path="figs/")
 ```
 
-6. richness analyses
+5. produce figures for range size with latitude
+5c. Pacific Ocean
+
+```{r}
+#1d pac lat range vs mid lat
+p1<-ggplot(pac_merge3,aes(log(abs_mid_lat),log(lat_range)))+
+  geom_point()+
+  stat_quantile(quantiles=c(.01,.99))+
+  theme_classic()+
+  geom_text(aes(label=ifelse(depth==68.5|depth==784.75|depth==4005,as.character(species1),'')),hjust=0,vjust=0)+
+  labs(x = " log mid lat of lat range",y="log lat range extent")
+
+#2d atl area vs mid lat
+p2<-ggplot(pac_merge3,aes(log(abs_decimalLat),log(area)))+
+  geom_point()+
+  stat_quantile(quantiles=c(.01,.99))+
+  theme_classic()+
+  geom_text(aes(label=ifelse(depth==68.5|depth==784.75|depth==4005,as.character(species1),'')),hjust=0,vjust=0)+
+  labs(x = " log mid lat of planar area",y="log planar range extent")
+
+
+
+plot_grid(p1, p2, align="v",nrow=2)
+
+```
+6. run this to analyze richness with depth
+6a. Atlantic Ocean
 
 
 ```{r}
-#atl
+
 attach(all_ready3)
 
 #subset atlantic from 2d richness dataset
@@ -396,7 +559,13 @@ ggsave(filename="atl_depth_rich.tiff",path="figs/")
 
 write.csv(atl_depth_rich,"output/atl_depth_rich.csv")
 
-#ind
+```
+
+6. run this to analyze richness with depth
+6b. Indian Ocean
+
+```{r}
+
 #attach(all_ready3)
 
 #subset atlantic from 2d richness dataset
@@ -463,9 +632,10 @@ write.csv(ind_depth_rich,"output/ind_depth_rich.csv")
 
 ```
 
+7. run this to analyze richness with latitude
+7a. Atlantic Ocean
 
 ```{r}
-#atl
 
 attach(atl_richness_1)
 attach(atl_richness_raw)
@@ -560,7 +730,13 @@ ggsave(filename="atl_lat_rich.tiff",path="figs/")
 
 write.csv(atl_lat_rich_combine2,"output/atl_lat_rich_combine2.csv")
 
-#ind___________________________________________
+```
+
+6. run this to analyze richness with latitude
+6b. Indian Ocean
+
+```{r}
+
 #to get lat extent richness
 
 attach(ind_july19_rich_raw_lat3)
@@ -635,7 +811,7 @@ write.csv(ind_lat_rich_combine2,"output/ind_lat_rich_combine2.csv")
 
 
 
-
+Below are chunks of code removed from above analyses
 
 ```{r}
 #ind code that was redone above. keeping this in case i need to go back to basics
