@@ -252,6 +252,31 @@ this is where i am up to. i need to redo all maps.
 2 follow methods 
 
 ```{r}
+
+# to combine mbg left vs right
+
+attach(pac_right_mbg3)
+attach(pac_left_mbg3)
+
+pac_mbg_combine<-merge(pac_right_mbg3,pac_left_mbg3,by="species",all=T)
+pac_mbg_combine$area_geog_combine<-1
+pac_mbg_combine[is.na(pac_mbg_combine)]<-0
+pac_mbg_combine$area_geog_combine<-pac_mbg_combine$area_geog.x+pac_mbg_combine$area_geog.y
+pac_mbg_combine$y_median<-(pac_mbg_combine$mid_y_geog.x+pac_mbg_combine$mid_y_geog.y)/2
+
+write.csv(pac_mbg_combine,"output/pac_mbg_combine.csv")
+
+#had to edit in excel because the above took means of teh 0 datapoints taht should have been excluded from analysis
+attach(pac_mbg_combine_edit)
+
+
+
+
+```
+
+```{r}
+
+
 #aggregate each column, grouped by species
 pac_agg<-aggregate(pacific_occurrences2,by=list(pacific_occurrences2$species),FUN=median)
 
@@ -318,7 +343,16 @@ pac_merge3<-merge(pac_merge2,one_d,by="species1")
 pac_merge3<-pac_merge3 %>% mutate(abs_mid_lat=abs(mid_lat))
 pac_merge3<-pac_merge3 %>% mutate(abs_decimalLat=abs(decimalLat))
 
-write.csv(pac_merge3,"output/pac_merge3.csv")
+#to add geog range to 1 and 2 d data
+
+names(pac_mbg_combine_edit)[names(pac_mbg_combine)=='species']<-'species1'
+
+pac_merge4<-merge(pac_merge3,pac_mbg_combine_edit,by="species1")
+
+#to calculate abs mid lat for geog data
+pac_merge4<-pac_merge4 %>% mutate(abs_y_median=abs(y_median))
+
+write.csv(pac_merge4,"output/pac_merge4.csv")
 
 ```
 
@@ -328,6 +362,8 @@ write.csv(pac_merge3,"output/pac_merge3.csv")
 ```{r}
 
 #1d atl depth range vs mid depth
+
+attach(atl_merge4)
 p1a<-ggplot(atl_merge4,aes(middepth1d,log(depthrange1d)),label=species1)+
   geom_point()+
   stat_quantile(quantiles=c(.01,.99))+
@@ -484,24 +520,38 @@ ggsave(filename="ind_range_latitude.tiff",path="figs/")
 
 ```{r}
 #1d pac lat range vs mid lat
-p1<-ggplot(pac_merge3,aes(log(abs_mid_lat),log(lat_range)))+
+
+attach(pac_merge3)
+
+p1<-ggplot(pac_merge4,aes(abs_mid_lat,log(lat_range)))+
   geom_point()+
   stat_quantile(quantiles=c(.01,.99))+
   theme_classic()+
+  #xlim(-1,4)+
   geom_text(aes(label=ifelse(depth==68.5|depth==784.75|depth==4005,as.character(species1),'')),hjust=0,vjust=0)+
   labs(x = " log mid lat of lat range",y="log lat range extent")
 
-#2d atl area vs mid lat
-p2<-ggplot(pac_merge3,aes(log(abs_decimalLat),log(area)))+
+#1d geog extent vs mid lat
+p2<-ggplot(pac_merge4,aes(abs_y_median,log(area_geog_combine)))+
   geom_point()+
   stat_quantile(quantiles=c(.01,.99))+
   theme_classic()+
+  #xlim(-1,4)+
+  geom_text(aes(label=ifelse(depth==68.5|depth==784.75|depth==4005,as.character(species1),'')),hjust=0,vjust=0)+
+  labs(x = "mid lat of geographic range",y="log geographic range extent")
+
+#2d atl area vs mid lat
+p3<-ggplot(pac_merge4,aes(abs_decimalLat,log(area)))+
+  geom_point()+
+  stat_quantile(quantiles=c(.01,.99))+
+  theme_classic()+
+ #xlim(-1,4)+
   geom_text(aes(label=ifelse(depth==68.5|depth==784.75|depth==4005,as.character(species1),'')),hjust=0,vjust=0)+
   labs(x = " log mid lat of planar area",y="log planar range extent")
 
+plot_grid(p1, p2, p3, align="v",nrow=3)
 
-
-plot_grid(p1, p2, align="v",nrow=2)
+ggsave(filename="pac_range_latitude.tiff",path="figs/")
 
 ```
 6. run this to analyze richness with depth
@@ -629,6 +679,88 @@ theme_classic()
 ggsave(filename="ind_depth_rich.tiff",path="figs/")
 
 write.csv(ind_depth_rich,"output/ind_depth_rich.csv")
+
+```
+
+6. run this to analyze richness with depth
+6c. Pacific Ocean
+
+up to here. need to:
+redo 2d rich analysis
+
+```{r}
+
+attach(all_ready3)
+
+#subset atlantic from 2d richness dataset
+#pac_rich_2d<-subset(all_ready3,ocean=="pacific")
+#need to redo 2d rich for lat and depth... doing it below
+
+attach(pac_left_unsuited1)
+attach(pac_right_unsuited1)
+names(pac_left_unsuited1)[names(pac_left_unsuited1)=='species']<-'species1'
+names(pac_right_unsuited1)[names(pac_right_unsuited1)=='species']<-'species1'
+
+pac_left_unsuit1_minmax<-merge(pac_left_unsuited1,pac_merge4,by='species1',all=T)
+pac_right_unsuit1_minmax<-merge(pac_right_unsuited1,pac_merge4,by='species1',all=T)
+
+#now that min and max depth has been added to the gis database (raw unsuited rich, not yet pivoted), export it and work in excel
+write.csv(pac_left_unsuit1_minmax,"output/pac_left_unsuit1_minmax.csv")
+write.csv(pac_right_unsuit1_minmax,"output/pac_right_unsuit1_minmax.csv")
+
+#calculated richness per fid, now need to add lat long depth to that data
+attach(pac_fid_rich_need_xyd)
+attach(pac_xyd_fid_need_rich)
+
+pac_rich_merge<-merge(pac_fid_rich_need_xyd,pac_xyd_fid_need_rich,by='TARGET_FID')
+write.csv(pac_rich_merge,"output/pac_rich_merge.csv")
+
+#pac_rich_merge looks good, deleted species name and renamed it pac_rich_merge_2
+attach(pac_rich_merge2)
+
+#subset 1d 
+data <- subset(pac_merge4, select = c('species1','min_depth','max_depth'))
+
+pac_rich_1d <- data.frame(depth=as.numeric(),richness=as.numeric())
+
+for (i in 1:5467) {
+  ccc <- vector()  
+  for (k in 1:nrow(data)){
+    a<- if (i>=data$min_depth[k] & i<=data$max_depth[k]) {1} else {0}
+    ccc <- c(ccc,a)
+    
+    
+  }
+  pac_rich_1d[i,1] <- i
+  pac_rich_1d[i,2] <- sum(ccc)
+}
+
+species_ranges3<-data.frame(depth=integer(),max_rich=integer(),stringsAsFactors = F)
+
+species_sorted3<- pac_rich_merge2[order(pac_rich_merge2$depth),]
+
+for (i in 1:length(unique(species_sorted3$depth))) {
+  species_ranges3[i,1] <- as.numeric(unique(species_sorted3$depth)[i])#depth value
+  species_ranges3[i,2] <- as.numeric(max(species_sorted3[which(species_sorted3$depth == species_ranges3[i,1]),]$richness))
+}
+
+names(pac_rich_1d)[names(pac_rich_1d)=='richness']<-'richness1d'
+names(species_ranges3)[names(species_ranges3)=='max_rich']<-'richness2d'
+
+pac_depth_rich<-merge(pac_rich_1d,species_ranges3,by="depth")
+
+ggplot(pac_depth_rich,aes(depth))+
+geom_line(aes(y=richness2d,color="2d"),size=1)+ 
+geom_line(aes(y=richness1d,color="1d"),size=1)+
+xlab(label="Depth (m)")+
+ylab("Richness")+
+theme_classic()
+
+#to save figure and output
+
+ggsave(filename="pac_depth_rich.tiff",path="figs/")
+
+write.csv(pac_depth_rich,"output/pac_depth_rich.csv")
 
 ```
 
