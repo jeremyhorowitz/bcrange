@@ -927,8 +927,91 @@ write.csv(ind_lat_rich_combine2,"output/ind_lat_rich_combine2.csv")
 8. run this to analyze richness with latitude
 8c. Pacific Ocean
 
-```{r}
 
+change below code to work for Pacific Ocean! good luck!
+
+
+
+```{r}
+attach(atl_richness_1)
+attach(atl_richness_raw)
+
+#1d geographic richness
+atl_lat_1_d_merge<-merge(atl_richness_1,atl_richness_raw,by="target_fid")
+
+#1d lat extent for atl
+atl_lat_rich<-atl_lat_1_d_merge %>%
+  group_by(y.y) %>%
+  summarise(n_distinct(species))
+
+names(atl_lat_rich)[names(atl_lat_rich)=='n_distinct(species)']<-'richness'
+
+
+atl_lat_rich<-round(atl_lat_rich,2)
+
+p1<-ggplot(atl_lat_rich,aes(y.y,richness))+
+  geom_point(size=3)+
+  ylim(0,60)+
+  labs(x ="latitude",y="1d latitude extent richness")
+
+
+
+#to pull out max rich per lat value for p2
+#create empty dataframe to insert max  richness per lat
+species_ranges<-data.frame(y.y=integer(),max_rich=integer(),stringsAsFactors = F)
+
+#to sort data by lat
+species_sorted<- atl_lat_1_d_merge[order(atl_lat_1_d_merge$y.y),]
+
+species_sorted[is.na(species_sorted)] <- 0
+
+#for loop: go through maxi and pull out the max richness for each lat 
+for (i in 1:length(unique(species_sorted$y.y))) {
+  species_ranges[i,1] <- as.numeric(unique(species_sorted$y.y)[i])#lat value
+  species_ranges[i,2] <- as.numeric(max(species_sorted[which(species_sorted$y.y == species_ranges[i,1]),]$richness))
+}
+
+species_ranges<-round(species_ranges,2)
+
+#p2<-ggplot(atl_lat_1_d_merge,aes(y.y,richness))+
+  geom_point()+
+  ylim(0,60)+
+  labs(x ="latitude",y="1d geographic extent richness")
+  
+
+#to pull out max rich per lat value for p3
+#create empty dataframe to insert max  richness per lat
+species_ranges2<-data.frame(y.y=integer(),max_rich=integer(),stringsAsFactors = F)
+
+#to sort data by lat
+species_sorted2<- atl_rich_2d[order(atl_rich_2d$y_exact),]
+
+#for loop: go through maxi and pull out the max richness for each lat 
+for (i in 1:length(unique(species_sorted2$y_exact))) {
+  species_ranges2[i,1] <- as.numeric(unique(species_sorted2$y_exact)[i])#lat value
+  species_ranges2[i,2] <- as.numeric(max(species_sorted2[which(species_sorted2$y_exact == species_ranges2[i,1]),]$richness))
+}
+
+#p3<-ggplot(atl_rich_3d,aes(y_exact,richness))+
+  geom_point(size=3)+
+  ylim(0,60)+
+  labs(x ="latitude",y="2d planar range extent richness")
+
+
+names(atl_lat_rich)[names(atl_lat_rich)=='richness']<-'rich_lat'
+names(species_ranges)[names(species_ranges)=='max_rich']<-'rich_geog'
+names(species_ranges2)[names(species_ranges2)=='max_rich']<-'rich_2d'
+
+names(atl_lat_rich)[names(atl_lat_rich)=='y.y']<-'lat'
+names(species_ranges)[names(species_ranges)=='y.y']<-'lat'
+names(species_ranges2)[names(species_ranges2)=='y.y']<-'lat'
+
+atl_lat_rich_combine<-merge(atl_lat_rich,species_ranges,by="lat")
+
+atl_lat_rich_combine2<-merge(atl_lat_rich_combine,species_ranges2,by='lat')
+
+#to save output
+write.csv(atl_lat_rich_combine2,"output/atl_lat_rich_combine2.csv")
 
 ```
 
