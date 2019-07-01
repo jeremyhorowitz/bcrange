@@ -35,6 +35,12 @@ attach(ind_2d_1d_merge_cleaned)
 attach(occurrence_data_2)
 attach(pacific_occurrences2)
 attach(pac_merged_volumes_cleaned)
+
+attach(pac_right_mbg3)
+attach(pac_left_mbg3)
+
+#had to edit in excel because the above took means of teh 0 datapoints taht should have been excluded from analysis
+attach(pac_mbg_combine_edit)
 ```
 
 2. Load these packages needed for these analyses:
@@ -246,17 +252,10 @@ write.csv(ind_merge4,"output/ind_merge4.csv")
 3. analyses to produce range size with depth and latitude plots
 3c. Pacific ocean
 
-this is where i am up to. i need to redo all maps. 
-1 subset data for pac left and right that has fix points by species listed in pac_merge 3
-
-2 follow methods 
 
 ```{r}
 
 # to combine mbg left vs right
-
-attach(pac_right_mbg3)
-attach(pac_left_mbg3)
 
 pac_mbg_combine<-merge(pac_right_mbg3,pac_left_mbg3,by="species",all=T)
 pac_mbg_combine$area_geog_combine<-1
@@ -264,18 +263,7 @@ pac_mbg_combine[is.na(pac_mbg_combine)]<-0
 pac_mbg_combine$area_geog_combine<-pac_mbg_combine$area_geog.x+pac_mbg_combine$area_geog.y
 pac_mbg_combine$y_median<-(pac_mbg_combine$mid_y_geog.x+pac_mbg_combine$mid_y_geog.y)/2
 
-write.csv(pac_mbg_combine,"output/pac_mbg_combine.csv")
-
-#had to edit in excel because the above took means of teh 0 datapoints taht should have been excluded from analysis
-attach(pac_mbg_combine_edit)
-
-
-
-
-```
-
-```{r}
-
+write.csv(pac_mbg_combine,"data/pac_mbg_combine.csv")
 
 #aggregate each column, grouped by species
 pac_agg<-aggregate(pacific_occurrences2,by=list(pacific_occurrences2$species),FUN=median)
@@ -554,6 +542,7 @@ plot_grid(p1, p2, p3, align="v",nrow=3)
 ggsave(filename="pac_range_latitude.tiff",path="figs/")
 
 ```
+
 6. run this to analyze richness with depth
 6a. Atlantic Ocean
 
@@ -596,18 +585,9 @@ names(species_ranges3)[names(species_ranges3)=='max_rich']<-'richness2d'
 
 atl_depth_rich<-merge(atl_rich_1d,species_ranges3,by="depth")
 
-ggplot(atl_depth_rich,aes(depth))+
-geom_line(aes(y=richness2d,color="2d"),size=1)+ 
-geom_line(aes(y=richness1d,color="1d"),size=1)+
-xlab(label="Depth (m)")+
-ylab("Richness")+
-theme_classic()
-
-#to save figure and output
-
-ggsave(filename="atl_depth_rich.tiff",path="figs/")
-
+#to save output
 write.csv(atl_depth_rich,"output/atl_depth_rich.csv")
+
 
 ```
 
@@ -667,26 +647,13 @@ names(species_ranges3_2d)[names(species_ranges3_2d)=='max_rich']<-'richness2d'
 
 ind_depth_rich<-merge(ind_rich_1d,species_ranges3_2d,by="depth")
 
-ggplot(ind_depth_rich,aes(depth))+
-geom_line(aes(y=richness2d,color="2d"),size=1)+ 
-geom_line(aes(y=richness1d,color="1d"),size=1)+
-xlab(label="Depth (m)")+
-ylab("Richness")+
-theme_classic()
-
-#to save figure and output
-
-ggsave(filename="ind_depth_rich.tiff",path="figs/")
-
+#to save output
 write.csv(ind_depth_rich,"output/ind_depth_rich.csv")
 
 ```
 
 6. run this to analyze richness with depth
 6c. Pacific Ocean
-
-up to here. need to:
-redo 2d rich analysis
 
 ```{r}
 
@@ -705,15 +672,15 @@ pac_left_unsuit1_minmax<-merge(pac_left_unsuited1,pac_merge4,by='species1',all=T
 pac_right_unsuit1_minmax<-merge(pac_right_unsuited1,pac_merge4,by='species1',all=T)
 
 #now that min and max depth has been added to the gis database (raw unsuited rich, not yet pivoted), export it and work in excel
-write.csv(pac_left_unsuit1_minmax,"output/pac_left_unsuit1_minmax.csv")
-write.csv(pac_right_unsuit1_minmax,"output/pac_right_unsuit1_minmax.csv")
+write.csv(pac_left_unsuit1_minmax,"data/pac_left_unsuit1_minmax.csv")
+write.csv(pac_right_unsuit1_minmax,"data/pac_right_unsuit1_minmax.csv")
 
 #calculated richness per fid, now need to add lat long depth to that data
 attach(pac_fid_rich_need_xyd)
 attach(pac_xyd_fid_need_rich)
 
 pac_rich_merge<-merge(pac_fid_rich_need_xyd,pac_xyd_fid_need_rich,by='TARGET_FID')
-write.csv(pac_rich_merge,"output/pac_rich_merge.csv")
+write.csv(pac_rich_merge,"data/pac_rich_merge.csv")
 
 #pac_rich_merge looks good, deleted species name and renamed it pac_rich_merge_2
 attach(pac_rich_merge2)
@@ -749,6 +716,51 @@ names(species_ranges3)[names(species_ranges3)=='max_rich']<-'richness2d'
 
 pac_depth_rich<-merge(pac_rich_1d,species_ranges3,by="depth")
 
+#to save output
+write.csv(pac_depth_rich,"output/pac_depth_rich.csv")
+
+```
+
+
+7. plot richness with depth
+7a. Atlantic Ocean
+
+```{r}
+
+ggplot(atl_depth_rich,aes(depth))+
+geom_line(aes(y=richness2d,color="2d"),size=1)+ 
+geom_line(aes(y=richness1d,color="1d"),size=1)+
+xlab(label="Depth (m)")+
+ylab("Richness")+
+theme_classic()
+
+#to save figure
+ggsave(filename="atl_depth_rich.tiff",path="figs/")
+
+
+```
+
+7. plot richness with depth
+7b. Indian Ocean
+
+```{r}
+
+ggplot(ind_depth_rich,aes(depth))+
+geom_line(aes(y=richness2d,color="2d"),size=1)+ 
+geom_line(aes(y=richness1d,color="1d"),size=1)+
+xlab(label="Depth (m)")+
+ylab("Richness")+
+theme_classic()
+
+#to save figure
+ggsave(filename="ind_depth_rich.tiff",path="figs/")
+
+```
+
+7. plot richness with depth
+7c. Pacific Ocean
+
+```{r}
 ggplot(pac_depth_rich,aes(depth))+
 geom_line(aes(y=richness2d,color="2d"),size=1)+ 
 geom_line(aes(y=richness1d,color="1d"),size=1)+
@@ -756,16 +768,14 @@ xlab(label="Depth (m)")+
 ylab("Richness")+
 theme_classic()
 
-#to save figure and output
-
+#to save figure 
 ggsave(filename="pac_depth_rich.tiff",path="figs/")
-
-write.csv(pac_depth_rich,"output/pac_depth_rich.csv")
 
 ```
 
-7. run this to analyze richness with latitude
-7a. Atlantic Ocean
+
+8. run this to analyze richness with latitude
+8a. Atlantic Ocean
 
 ```{r}
 
@@ -846,26 +856,13 @@ atl_lat_rich_combine<-merge(atl_lat_rich,species_ranges,by="lat")
 
 atl_lat_rich_combine2<-merge(atl_lat_rich_combine,species_ranges2,by='lat')
 
-ggplot(atl_lat_rich_combine2,aes(lat))+
-geom_line(aes(y=rich_lat,color="lat"),size=1)+ 
-geom_line(aes(y=rich_geog,color="geog"),size=1)+
-geom_line(aes(y=rich_2d,color="planar"),size=1)+
-xlab(label="latitude (degrees)")+
-ylab("Richness")+
-theme_classic()
-
-
-
-#to save figure and output
-
-ggsave(filename="atl_lat_rich.tiff",path="figs/")
-
+#to save output
 write.csv(atl_lat_rich_combine2,"output/atl_lat_rich_combine2.csv")
 
 ```
 
-6. run this to analyze richness with latitude
-6b. Indian Ocean
+8. run this to analyze richness with latitude
+8b. Indian Ocean
 
 ```{r}
 
@@ -921,6 +918,46 @@ for (i in 1:length(unique(species_sorted3$y))) {
 ind_lat_rich_combine<-merge(ind_lat_rich,species_ranges2,by="y")
 ind_lat_rich_combine2<-merge(ind_lat_rich_combine,species_ranges3,by="y")
 
+#to save output
+write.csv(ind_lat_rich_combine2,"output/ind_lat_rich_combine2.csv")
+
+
+```
+
+8. run this to analyze richness with latitude
+8c. Pacific Ocean
+
+```{r}
+
+
+```
+
+9. plot richness with latitude
+9a. Atlantic Ocean
+
+
+```{r}
+
+ggplot(atl_lat_rich_combine2,aes(lat))+
+geom_line(aes(y=rich_lat,color="lat"),size=1)+ 
+geom_line(aes(y=rich_geog,color="geog"),size=1)+
+geom_line(aes(y=rich_2d,color="planar"),size=1)+
+xlab(label="latitude (degrees)")+
+ylab("Richness")+
+theme_classic()
+
+
+
+#to save figure
+ggsave(filename="atl_lat_rich.tiff",path="figs/")
+
+```
+
+9. plot richness with latitude
+9b. Indian Ocean
+
+```{r}
+
 ggplot(ind_lat_rich_combine2,aes(y))+
 geom_line(aes(y=richness_2d,color="richness_2d"),size=1)+  
 geom_line(aes(y=richness_geog,color="richness_geog"),size=1)+
@@ -929,17 +966,21 @@ xlab(label="latitude (degrees)")+
 ylab("Richness")+
 theme_classic()
 
-#to save figure and output
+#to save figure
 
 ggsave(filename="ind_lat_rich.tiff",path="figs/")
-
-write.csv(ind_lat_rich_combine2,"output/ind_lat_rich_combine2.csv")
-
 
 ```
 
 
+9. plot richness with latitude
+9c. Pacific Ocean
 
+```{r}
+
+
+
+```
 
 
 
