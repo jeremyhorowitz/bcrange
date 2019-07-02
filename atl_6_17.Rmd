@@ -363,7 +363,7 @@ p1a<-ggplot(atl_merge4,aes(middepth1d,depthrange1d),label=species1)+
   labs(x = "log mid depth of depth range",y="log depth range extent")
 
 #2d atl area vs mid depth
-p2a<-ggplot(atl_merge4,aes(middepth2d,planarextent2d))+
+p2a<-ggplot(atl_merge4,aes(middepth1d,planarextent2d))+
   geom_point()+
   stat_quantile(quantiles=c(.01,.99))+
   theme_classic()+
@@ -400,7 +400,7 @@ p1a<-ggplot(ind_merge4,aes(middepth1d,depthrange1d),label=species1)+
   labs(x = "mid depth of depth range",y="log depth range extent")
 
 #2d atl area vs mid depth
-p2a<-ggplot(ind_merge4,aes(middepth2d,planarextent2d))+
+p2a<-ggplot(ind_merge4,aes(middepth1d,planarextent2d))+
   geom_point()+
   stat_quantile(quantiles=c(.01,.99))+
   theme_classic()+
@@ -437,7 +437,7 @@ p1<-ggplot(pac_merge3,aes(mid_depth,bathy_range),label=species1)+
   labs(x = " log mid depth of depth range",y="log depth range extent")
 
 #2d pac area vs mid depth
-p2<-ggplot(pac_merge3,aes(depth,area))+
+p2<-ggplot(pac_merge3,aes(mid_depth,area))+
   geom_point()+
   stat_quantile(quantiles=c(.01,.99))+
   theme_classic()+
@@ -474,7 +474,7 @@ p1b<-ggplot(atl_merge4,aes(absmidlat1d,latrange1d))+
   labs(x = "log mid lat of lat range",y="log lat range extent")
 
 #1d geog extent vs mid lat
-p2b<-ggplot(atl_merge4,aes(absmidlat1dgeog,planarextent1dgeog))+
+p2b<-ggplot(atl_merge4,aes(absmidlat1d,planarextent1dgeog))+
   geom_point()+
   stat_quantile(quantiles=c(.01,.99))+
   theme_classic()+
@@ -485,7 +485,7 @@ p2b<-ggplot(atl_merge4,aes(absmidlat1dgeog,planarextent1dgeog))+
   labs(x = "log mid lat of geographic range",y="log geographic range extent")
 
 #2d atl area vs mid lat
-p3b<-ggplot(atl_merge4,aes(absmidlat2d,planarextent2d))+
+p3b<-ggplot(atl_merge4,aes(absmidlat1d,planarextent2d))+
   geom_point()+
   stat_quantile(quantiles=c(.01,.99))+
   theme_classic()+
@@ -524,7 +524,7 @@ p1b<-ggplot(ind_merge4,aes(absmidlat1d,latrange1d))+
   labs(x = "log mid lat of lat range",y="log lat range extent")
 
 #1d geog extent vs mid lat
-p2b<-ggplot(ind_merge4,aes(absmidlat1dgeog,log(planarextent1dgeog)))+
+p2b<-ggplot(ind_merge4,aes(absmidlat1d,log(planarextent1dgeog)))+
   geom_point()+
   stat_quantile(quantiles=c(.01,.99))+
   theme_classic()+
@@ -534,7 +534,7 @@ p2b<-ggplot(ind_merge4,aes(absmidlat1dgeog,log(planarextent1dgeog)))+
   labs(x = "log mid lat of geographic range",y="log geographic range extent")
 
 #2d atl area vs mid lat
-p3b<-ggplot(ind_merge4,aes(absmidlat2d,planarextent2d))+
+p3b<-ggplot(ind_merge4,aes(absmidlat1d,planarextent2d))+
   geom_point()+
   stat_quantile(quantiles=c(.01,.99))+
   theme_classic()+
@@ -574,7 +574,7 @@ p1<-ggplot(pac_merge4,aes(abs_mid_lat,lat_range))+
   labs(x = " log mid lat of lat range",y="log lat range extent")
 
 #1d geog extent vs mid lat
-p2<-ggplot(pac_merge4,aes(abs_y_median,area_geog_combine))+
+p2<-ggplot(pac_merge4,aes(abs_mid_lat,area_geog_combine))+
   geom_point()+
   stat_quantile(quantiles=c(.01,.99))+
   theme_classic()+
@@ -585,7 +585,7 @@ p2<-ggplot(pac_merge4,aes(abs_y_median,area_geog_combine))+
   labs(x = "log mid lat of geographic range",y="log geographic range extent")
 
 #2d atl area vs mid lat
-p3<-ggplot(pac_merge4,aes(abs_decimalLat,area))+
+p3<-ggplot(pac_merge4,aes(abs_mid_lat,area))+
   geom_point()+
   stat_quantile(quantiles=c(.01,.99))+
   theme_classic()+
