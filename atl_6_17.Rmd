@@ -785,6 +785,25 @@ pac_depth_rich<-merge(pac_rich_1d,species_ranges3,by="depth")
 #to save output
 write.csv(pac_depth_rich,"output/pac_depth_rich.csv")
 
+
+#retesting 2d depth richness
+attach(pac_2d_depth_ready)
+
+pac_2d_depth_ready<-round(pac_2d_depth_ready,0)
+
+species_ranges6<-data.frame(depth=integer(),max_rich=integer(),stringsAsFactors = F)
+
+species_sorted6<- pac_2d_depth_ready[order(pac_2d_depth_ready$depth),]
+
+for (i in 1:length(unique(species_sorted6$depth))) {
+  species_ranges6[i,1] <- as.numeric(unique(species_sorted6$depth)[i])#depth value
+  species_ranges6[i,2] <- as.numeric(max(species_sorted6[which(species_sorted6$depth == species_ranges6[i,1]),]$richness))
+}
+
+names(species_ranges6)[names(species_ranges6)=='max_rich']<-'richness2d'
+pac_depth_rich_test<-merge(pac_rich_1d,species_ranges6,by="depth")
+
+
 ```
 
 
@@ -837,6 +856,8 @@ theme_classic()
 
 #to save figure 
 ggsave(filename="pac_depth_rich.tiff",path="figs/")
+
+
 
 ```
 
@@ -1010,23 +1031,115 @@ attach(pac_2d_lat)
 #for 1d
 attach(pac_merge4)
 
+attach(pac_combine_for1dlatextent)
+
+#1d lat extent for atl
+pac_lat_rich<-pac_combine_for1dlatextent %>%
+  group_by(y) %>%
+  summarise(n_distinct(species))
+
+names(pac_lat_rich)[names(pac_lat_rich)=='n_distinct(species)']<-'richness_lat'
+
+
+#1d geog, first attach xyz to pivot table for left and right parts of pac
+attach(pac_left_for1dgeog)
+attach(pac_left_geog_raw_rich)
+attach(pac_right_for1dgeog)
+attach(pac_right_geog_raw_rich)
+
+pac_left_merge<-merge(pac_left_geog_raw_rich,pac_left_for1dgeog,by='TARGET_FID_LEFT')
+pac_right_merge<-merge(pac_right_geog_raw_rich,pac_right_for1dgeog,by='TARGET_FID_RIGHT')
+
+#CHANGE NAMES OF TARGET FIDS TO BE THE SAME BETWEEN LEFT AND RIGHT SO THEY CAN BE COMBINED
+names(pac_left_merge)[names(pac_left_merge)=='TARGET_FID_LEFT']<-'TARGET_FID'
+names(pac_right_merge)[names(pac_right_merge)=='TARGET_FID_RIGHT']<-'TARGET_FID'
+
+names(pac_left_merge)[names(pac_left_merge)=='species_left']<-'species'
+names(pac_left_merge)[names(pac_left_merge)=='depth_left']<-'depth'
+names(pac_left_merge)[names(pac_left_merge)=='x_left']<-'x'
+names(pac_left_merge)[names(pac_left_merge)=='y_left']<-'y'
+
+
+
+names(pac_right_merge)[names(pac_right_merge)=='species_right']<-'species'
+names(pac_right_merge)[names(pac_right_merge)=='depth_right']<-'depth'
+names(pac_right_merge)[names(pac_right_merge)=='x_right']<-'x'
+names(pac_right_merge)[names(pac_right_merge)=='y_right']<-'y'
+
+#to combine left and right in excel
+write.csv(pac_left_merge,"output/pac_left_merge.csv")
+#to save output
+write.csv(pac_right_merge,"output/mac_right_merge.csv")
+
+#bring combined dataset back:
+attach(pac_geog_lat_ready)
+
+#pull out max rich per lat:
+
+species_ranges4<-data.frame(y=integer(),max_rich=integer(),stringsAsFactors = F)
+
+#to sort data by lat
+species_sorted4<- pac_geog_lat_ready[order(pac_geog_lat_ready$y),]
+
+#species_sorted4[is.na(species_sorted)] <- 0
+
+#for loop: go through maxi and pull out the max richness for each lat 
+for (i in 1:length(unique(species_sorted4$y))) {
+  species_ranges4[i,1] <- as.numeric(unique(species_sorted4$y)[i])#lat value
+  species_ranges4[i,2] <- as.numeric(max(species_sorted4[which(species_sorted4$y == species_ranges4[i,1]),]$richness))
+}
+
+pac_geog_merge<-merge(pac_left_merge,pac_right_merge,by='TARGET_FID',all=T)
+
+#2d richness with lat
+attach(pac_2d_left_working)
+attach(pac_2d_right_working)
+attach(pac_2d_left_worked)
+attach(pac_2d_right_worked)
+
+pac_left_merge_2d<-merge(pac_2d_left_worked,pac_2d_left_working,by='TARGET_FID')
+pac_right_merge_2d<-merge(pac_2d_right_worked,pac_2d_right_working,by='TARGET_FID')
+
+#to combine left and right in excel
+write.csv(pac_left_merge_2d,"output/pac_left_merge2d.csv")
+#to save output
+write.csv(pac_right_merge_2d,"output/mac_right_merge2d.csv")
+
+attach(pac_2d_lat_ready)
+
+#pull out max rich per lat:
+species_ranges5<-data.frame(y=integer(),max_rich=integer(),stringsAsFactors = F)
+
+#to sort data by lat
+species_sorted5<- pac_2d_lat_ready[order(pac_2d_lat_ready$y),]
+
+#species_sorted4[is.na(species_sorted)] <- 0
+
+#for loop: go through maxi and pull out the max richness for each lat 
+for (i in 1:length(unique(species_sorted5$y))) {
+  species_ranges5[i,1] <- as.numeric(unique(species_sorted5$y)[i])#lat value
+  species_ranges5[i,2] <- as.numeric(max(species_sorted5[which(species_sorted5$y == species_ranges5[i,1]),]$richness))
+}
+
+names(species_ranges5)[names(species_ranges5)=='max_rich']<-'rich_2d'
 #subset 1d 
-data <- subset(pac_merge4, select = c('species1','min_lat','max_lat'))
+#data <- subset(pac_merge4, select = c('species1','min_lat','max_lat'))
 
-pac_rich_1d <- data.frame(lat=as.numeric(),richness=as.numeric())
-
-
-
-
+#pac_rich_1d <- data.frame(lat=as.numeric(),richness=as.numeric())
 
 #1d geographic richness
-pac_geog_lat_rich<-pac_geog_lat %>%
-  group_by(y)%>%
-  summarise(n_distinct(species1))
+#pac_geog_lat_rich<-pac_geog_lat %>%
+#  group_by(y)%>%
+#  summarise(n_distinct(species1))
 
-names(pac_geog_lat_rich)[names(pac_geog_lat_rich)=='n_distinct(species1)']<-'richness'
+#names(pac_geog_lat_rich)[names(pac_geog_lat_rich)=='n_distinct(species1)']<-'richness'
 
 #2d richness
+
+
+
+
+
 
 pac_2d_lat_rich<-pac_2d_lat %>%
   group_by(y)%>%
@@ -1034,16 +1147,22 @@ pac_2d_lat_rich<-pac_2d_lat %>%
 
 names(pac_2d_lat_rich)[names(pac_2d_lat_rich)=='n_distinct(species1)']<-'richness2d'
 
-pac_temp_combine<-merge(pac_2d_lat_rich,pac_geog_lat_rich,by="y")
+pac_temp_combine<-merge(species_ranges5,species_ranges4,by="y")
+pac_temp_combine2<-merge(pac_temp_combine, pac_lat_rich,by='y')
 
-ggplot(pac_temp_combine,aes(y))+
-geom_line(aes(y=richness,color="richness_2d"),size=1)+  
-geom_line(aes(y=richness2d,color="richness_geog"),size=1)+
+ggplot(pac_temp_combine2,aes(y))+
+geom_line(aes(y=richness_lat,color="richness_lat"),size=1)+  
+geom_line(aes(y=max_rich,color="richness_geog"),size=1)+
+geom_line(aes(y=rich_2d,color="rich_2d"),size=1)+
 xlab(label="latitude (degrees)")+
 ylab("Richness")+
 theme_classic()
 
-ggsave(filename="pac_lat_rich_working.tiff",path="figs/")
+ggsave(filename="pac_lat_rich.tiff",path="figs/")
+
+#to save the data to make this plot!
+#to save output
+write.csv(pac_temp_combine2,"output/pac_temp_combine2.csv")
 
 #to pull out max rich per lat value for p2
 #create empty dataframe to insert max  richness per lat
@@ -1146,6 +1265,8 @@ write.csv(atl_lat_rich_combine2,"output/atl_lat_rich_combine2.csv")
 
 ```{r}
 
+attach(atl_lat_rich_combine2)
+
 ggplot(atl_lat_rich_combine2,aes(lat))+
 geom_line(aes(y=rich_lat,color="lat"),size=1)+ 
 geom_line(aes(y=rich_geog,color="geog"),size=1)+
@@ -1165,6 +1286,8 @@ ggsave(filename="atl_lat_rich.tiff",path="figs/")
 9b. Indian Ocean
 
 ```{r}
+
+attach(ind_lat_rich_combine2)
 
 ggplot(ind_lat_rich_combine2,aes(y))+
 geom_line(aes(y=richness_2d,color="richness_2d"),size=1)+  
@@ -1186,7 +1309,17 @@ ggsave(filename="ind_lat_rich.tiff",path="figs/")
 
 ```{r}
 
+attach(pac_temp_combine2)
 
+ggplot(pac_temp_combine2,aes(y))+
+geom_line(aes(y=richness_lat,color="richness_lat"),size=1)+  
+geom_line(aes(y=max_rich,color="richness_geog"),size=1)+
+geom_line(aes(y=rich_2d,color="rich_2d"),size=1)+
+xlab(label="latitude (degrees)")+
+ylab("Richness")+
+theme_classic()
+
+ggsave(filename="pac_lat_rich.tiff",path="figs/")
 
 ```
 
