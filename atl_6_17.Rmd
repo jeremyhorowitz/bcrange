@@ -876,6 +876,11 @@ z1b<-ggplot(atl_pac_range_size2, aes(mid_depth, planar_range,shape==group,color=
 z1b
 
 plot_grid(z1a,z1b, align="v",ncol=2)
+ggsave(filename="range_depth.tiff",path="figs/")
+
+```
+
+```{r}
 
 z2a<-ggplot(atl_pac_range_size2, aes(mid_lat,lat_range,shape==group,color=group,fill=group))+
   geom_smooth(method="lm",se=F)+
@@ -921,6 +926,7 @@ z2c<-ggplot(atl_pac_range_size2, aes(mid_lat,planar_range,shape==group,color=gro
 z2c
 
 plot_grid(z2a,z2b,z2c, align="v",ncol=1)
+ggsave(filename="range_latitude.tiff",path="figs/")
 
 ```
 
