@@ -856,8 +856,9 @@ z1a<-ggplot(atl_pac_range_size2, aes(mid_depth, depth_range,shape==group,color=g
   theme_classic()+
   xlab("mid depth (m)")+
   ylab("depth extent m")+
-  facet_wrap(~group)+
-  geom_text(aes(label=ifelse(mid_depth==932.250,as.character(species),'')),hjust=0,vjust=0)
+  facet_wrap(~group,ncol=1)+
+  theme(strip.text.x = element_blank())
+  geom_text(aes(label=ifelse(mid_depth==256.500,as.character(species),'')),hjust=0,vjust=0)
 
 z1a
 z1b<-ggplot(atl_pac_range_size2, aes(mid_depth, planar_range,shape==group,color=group,fill=group))+
@@ -867,11 +868,14 @@ z1b<-ggplot(atl_pac_range_size2, aes(mid_depth, planar_range,shape==group,color=
   geom_point(size=3)+
   theme_classic()+
   xlab("mid depth (m)")+
-  ylab("depth extent m")+
-  facet_wrap(~group)+
-  geom_text(aes(label=ifelse(mid_depth==932.250,as.character(species),'')),hjust=0,vjust=0)
+  ylab("planar range extent m2")+
+  facet_wrap(~group,ncol=1)+
+  theme(strip.text.x = element_blank())
+  geom_text(aes(label=ifelse(mid_depth==256.500,as.character(species),'')),hjust=0,vjust=0)
 
 z1b
+
+plot_grid(z1a,z1b, align="v",ncol=2)
 
 z2a<-ggplot(atl_pac_range_size2, aes(mid_lat,lat_range,shape==group,color=group,fill=group))+
   geom_smooth(method="lm",se=F)+
@@ -882,7 +886,8 @@ z2a<-ggplot(atl_pac_range_size2, aes(mid_lat,lat_range,shape==group,color=group,
   xlab("mid lat (m)")+
   ylab("lat extent m")+
   facet_wrap(~group,ncol=1)+
-  geom_text(aes(label=ifelse(mid_depth==932.250,as.character(species),'')),hjust=0,vjust=0)
+  theme(strip.text.x = element_blank())
+  geom_text(aes(label=ifelse(mid_depth==256.500,as.character(species),'')),hjust=0,vjust=0)
 
 
 z2a
@@ -894,9 +899,10 @@ z2b<-ggplot(atl_pac_range_size2, aes(mid_lat,geog_range,shape==group,color=group
   geom_point(size=3)+
   theme_classic()+
   xlab("mid lat (m)")+
-  ylab("lat extent m")+
+  ylab("geog extent m2")+
   facet_wrap(~group,ncol=1)+
-  geom_text(aes(label=ifelse(mid_depth==1655.250,as.character(species),'')),hjust=0,vjust=0)
+  theme(strip.text.x = element_blank())
+  geom_text(aes(label=ifelse(mid_depth==256.500,as.character(species),'')),hjust=0,vjust=0)
 
 z2b
 
@@ -907,11 +913,14 @@ z2c<-ggplot(atl_pac_range_size2, aes(mid_lat,planar_range,shape==group,color=gro
   geom_point(size=3)+
   theme_classic()+
   xlab("mid lat (m)")+
-  ylab("lat extent m")+
+  ylab("planar extent m2")+
   facet_wrap(~group,ncol=1)+
-  geom_text(aes(label=ifelse(mid_depth==905.000,as.character(species),'')),hjust=0,vjust=0)
+  theme(strip.text.x = element_blank())
+  geom_text(aes(label=ifelse(mid_depth==256.500,as.character(species),'')),hjust=0,vjust=0)
 
 z2c
+
+plot_grid(z2a,z2b,z2c, align="v",ncol=1)
 
 ```
 
