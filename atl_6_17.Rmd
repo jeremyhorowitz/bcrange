@@ -847,8 +847,10 @@ combined range size tables to 1 and added group per ocean
 ```{r}
 
 attach(atl_pac_range_size2)
+attach(atl_pac_range_size_fix)
+attach(atl_pac_range_size_fix2)
 
-z1a<-ggplot(atl_pac_range_size2, aes(mid_depth, depth_range,shape==group,color=group,fill=group))+
+z1a<-ggplot(atl_pac_range_size_fix, aes(mid_depth, depth_range,shape==group,color=group,fill=group))+
   geom_smooth(method="lm",se=F)+
   scale_y_continuous(trans='log2')+
   scale_x_continuous(trans='log2')+
@@ -861,7 +863,7 @@ z1a<-ggplot(atl_pac_range_size2, aes(mid_depth, depth_range,shape==group,color=g
   geom_text(aes(label=ifelse(mid_depth==256.500,as.character(species),'')),hjust=0,vjust=0)
 
 z1a
-z1b<-ggplot(atl_pac_range_size2, aes(mid_depth, planar_range,shape==group,color=group,fill=group))+
+z1b<-ggplot(atl_pac_range_size_fix, aes(mid_depth, planar_range,shape==group,color=group,fill=group))+
   geom_smooth(method="lm",se=F)+
   scale_y_continuous(trans='log2')+
   scale_x_continuous(trans='log2')+
@@ -871,18 +873,34 @@ z1b<-ggplot(atl_pac_range_size2, aes(mid_depth, planar_range,shape==group,color=
   ylab("planar range extent m2")+
   facet_wrap(~group,ncol=1)+
   theme(strip.text.x = element_blank())
-  geom_text(aes(label=ifelse(mid_depth==256.500,as.character(species),'')),hjust=0,vjust=0)
+  geom_text(aes(label=ifelse(mid_depth==1655.25,as.character(species),'')),hjust=0,vjust=0)
 
 z1b
 
+testatl<-ggplot(atl_pac_range_size_fix_atl_only_tst, aes(mid_depth, planar_range,shape==group,color=group,fill=group))+
+  geom_smooth(method="lm",se=F)+
+  scale_y_continuous(trans='log2')+
+  scale_x_continuous(trans='log2')+
+  geom_point(size=3)+
+  theme_classic()+
+  xlab("mid depth (m)")+
+  ylab("planar range extent m2")+
+  theme(strip.text.x = element_blank())
+  geom_text(aes(label=ifelse(mid_depth==1655.25,as.character(species),'')),hjust=0,vjust=0)
+  
+testatl
+ggsave(filename="testatl.tiff",path="figs/")
+
 plot_grid(z1a,z1b, align="v",ncol=2)
 ggsave(filename="range_depth.tiff",path="figs/")
+
+
 
 ```
 
 ```{r}
 
-z2a<-ggplot(atl_pac_range_size2, aes(mid_lat,lat_range,shape==group,color=group,fill=group))+
+z2a<-ggplot(atl_pac_range_size_fix, aes(mid_lat,lat_range,shape==group,color=group,fill=group))+
   geom_smooth(method="lm",se=F)+
   scale_y_continuous(trans='log2')+
   scale_x_continuous(trans='log2')+
@@ -897,7 +915,7 @@ z2a<-ggplot(atl_pac_range_size2, aes(mid_lat,lat_range,shape==group,color=group,
 
 z2a
 
-z2b<-ggplot(atl_pac_range_size2, aes(mid_lat,geog_range,shape==group,color=group,fill=group))+
+z2b<-ggplot(atl_pac_range_size_fix, aes(mid_lat,geog_range,shape==group,color=group,fill=group))+
   geom_smooth(method="lm",se=F)+
   scale_y_continuous(trans='log2')+
   scale_x_continuous(trans='log2')+
@@ -911,7 +929,7 @@ z2b<-ggplot(atl_pac_range_size2, aes(mid_lat,geog_range,shape==group,color=group
 
 z2b
 
-z2c<-ggplot(atl_pac_range_size2, aes(mid_lat,planar_range,shape==group,color=group,fill=group))+
+z2c<-ggplot(atl_pac_range_size_fix, aes(mid_lat,planar_range,shape==group,color=group,fill=group))+
   geom_smooth(method="lm",se=F)+
   scale_y_continuous(trans='log2')+
   scale_x_continuous(trans='log2')+
