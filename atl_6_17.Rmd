@@ -154,7 +154,8 @@ names(atl_merge4)[names(atl_merge4)=='abs_decimalLat']<-'absmidlat2d'
 names(atl_merge4)[names(atl_merge4)=='MBV_Area']<-'planarextent2d'
 
 #to convert length of lat to meters
-atl_merge4<-atl_merge4 %>% mutate(latrange1d=(latrange1d * 11063.51))
+atl_merge4<-atl_merge4 %>% mutate(latrange1d=(latrange1d * 110635.1))
+
 
 write.csv(atl_merge4,"output/atl_merge4.csv")
 
@@ -910,6 +911,7 @@ plotting bound alone
   facet_wrap(~type,ncol=1,scales="free")
   
   bound_test
+  ggsave(filename="bound_atl.tiff",path="figs/")
 
 
 ```
