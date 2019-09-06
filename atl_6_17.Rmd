@@ -902,7 +902,10 @@ ggsave(filename="range_depth.tiff",path="figs/")
 plotting bound alone
 ```{r}
 
-  attach(bound_type_test)
+
+
+  
+attach(bound_type_test)
 
   bound_test<-ggplot(bound_type_test,aes(x=mid_depth,y=area))+ geom_point()+
   geom_smooth(data=subset(bound_type_test,species=="bound"),aes(x=mid_depth,y=area,color="red"),method="lm",formula=y~poly(x,2),se=F)+
@@ -913,12 +916,108 @@ plotting bound alone
   bound_test
   ggsave(filename="bound_atl.tiff",path="figs/")
 
+```
 
+
+```{r}  
+library(tidyverse)
+library(plotly)
+library(cowplot)
+library(sp)
+library(quantreg)
+  
+  attach(atl_ranges)
+  
+  atl_subset<-subset(atl_ranges,ocean=="atl")
+  atl_lat_range_subset<-subset(atl_subset,type=="lat_range")
+  atl_lat_range_subset<-subset(atl_lat_range_subset,!(species=="bound"))
+
+  atl_lat_range_subset<-atl_lat_range_subset %>% mutate(mid=mid+5)
+#  atl_lat_range_subset<-atl_lat_range_subset %>% mutate(area=area+5)
+
+  
+  atl_lat_plot<-ggplot(data=atl_lat_range_subset,aes(mid,area))+
+    geom_point()+
+    geom_point(color=ifelse(atl_lat_range_subset$species=="bound","red","black"))+
+  scale_y_continuous(trans='log2')+
+  scale_x_continuous(trans='log2')+
+      theme_classic()+
+  xlab("mid latitude (degrees latitude)")+
+  ylab("latitudinal extent (m)")
+    
+atl_lat_plot
+  ggsave(filename="atl_lat_plot.tiff",path="figs/")
+  
+  
 ```
 
 
 ```{r}
+library(tidyverse)
+library(plotly)
+library(cowplot)
+library(sp)
+library(quantreg)
+  
+  attach(atl_ranges)
+  
+  atl_subset<-subset(atl_ranges,ocean=="atl")
+  atl_lat_range_subset<-subset(atl_subset,type=="lat_geog_range")
+  atl_lat_range_subset<-subset(atl_lat_range_subset,!(species=="bound"))
 
+  
+  atl_lat_range_subset<-atl_lat_range_subset %>% mutate(mid=mid+5)
+ # atl_lat_range_subset<-atl_lat_range_subset %>% mutate(area=area+5)
+
+  
+  atl_lat_geog_plot<-ggplot(data=atl_lat_range_subset,aes(mid,area))+
+    geom_point()+
+    geom_point(color=ifelse(atl_lat_range_subset$species=="bound","red","black"))+
+  scale_y_continuous(trans='log2')+
+  scale_x_continuous(trans='log2')+
+      theme_classic()+
+  xlab("mid latitude (degrees latitude)")+
+  ylab("latitudinal extent (m)")
+    
+atl_lat_geog_plot
+  ggsave(filename="atl_lat_geog_plot.tiff",path="figs/")
+
+```
+```{r}
+library(tidyverse)
+library(plotly)
+library(cowplot)
+library(sp)
+library(quantreg)
+  
+  attach(atl_ranges)
+  
+  atl_subset<-subset(atl_ranges,ocean=="atl")
+  atl_lat_range_subset<-subset(atl_subset,type=="lat_planar_range")
+  atl_lat_range_subset<-subset(atl_lat_range_subset,!(species=="bound"))
+
+  
+  atl_lat_range_subset<-atl_lat_range_subset %>% mutate(mid=mid+5)
+ # atl_lat_range_subset<-atl_lat_range_subset %>% mutate(area=area+5)
+
+  
+  atl_lat_planar_plot<-ggplot(data=atl_lat_range_subset,aes(mid,area))+
+    geom_point()+
+    geom_point(color=ifelse(atl_lat_range_subset$species=="bound","red","black"))+
+ scale_y_continuous(trans='log2')+
+ scale_x_continuous(trans='log2')+
+      theme_classic()+
+  xlab("mid latitude (degrees latitude)")+
+  ylab("latitudinal extent (m)")
+    
+atl_lat_planar_plot
+  ggsave(filename="atl_lat_geog_plot.tiff",path="figs/")
+
+```
+
+
+
+```{r}
 z2a<-ggplot(atl_pac_range_size_fix, aes(mid_lat,lat_range,shape==group,color=group,fill=group))+
   geom_smooth(method="lm",se=F)+
   scale_y_continuous(trans='log2')+
