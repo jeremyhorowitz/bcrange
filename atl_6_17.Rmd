@@ -56,12 +56,6 @@ install.packages("sp")
 library(sp)
 install.packages("quantreg")
 library(quantreg)
-#install.packages("ggforce")
-#library(ggforce)
-#install.packages("ggExtra")
-#library(ggExtra)
-#install.packages("ggalt")
-#library(ggalt)
 ```
 
 3. analyses to produce range size with depth and latitude plots
@@ -351,498 +345,7 @@ write.csv(pac_merge4,"output/pac_merge4.csv")
 
 ```
 
-4. produce figures for range size with depth
-4a. Atlantic Ocean
 
-```{r}
-
-#1d atl depth range vs mid depth
-
-attach(atl_merge4)
-p1a<-ggplot(atl_merge4,aes(middepth1d,depthrange1d),label=species1)+
-  geom_point()+
-  #stat_quantile(quantiles=c(.01,.99))+
-  theme_classic()+
-  #xlim(0,5500)+
-  #geom_text(aes(label=ifelse(middepth2d==5212.5|middepth2d==735.5,as.character(species1),'')),hjust=0,vjust=0)+
-    scale_y_continuous(trans='log2')+
-    scale_x_continuous(trans='log2')+
-  labs(x = "log mid depth of depth range",y="log depth range extent")+
-  geom_smooth(method='lm',se=F)
-
-
-#2d atl area vs mid depth
-p2a<-ggplot(atl_merge4,aes(middepth1d,planarextent2d))+
-  geom_point()+
-  #stat_quantile(quantiles=c(.01,.99))+
-  theme_classic()+
-  #xlim(0,5500)+
-    scale_y_continuous(trans='log2')+
-    scale_x_continuous(trans='log2')+
-  #geom_text(aes(label=ifelse(middepth2d==5212.5|middepth2d==667.5,as.character(species1),'')),hjust=0,vjust=0)+
-  labs(x = "log mid depth of planar area",y="log planar range extent")+
-  geom_smooth(method='lm',se=F)
-
-comb<-p2a+geom_point(aes(y=depthrange1d))
-comb
-
-combine<-ggplot(atl_merge4,aes(middepth1d,depthrange1d))+
-  geom_point()+
-  geom_smooth(method='lm',se=F)+
-  scale_y_continuous(trans='log2')+
-  scale_x_continuous(trans='log2')+
-  labs(x="species' mid-depth",y="bathymetric extent")+
-  theme_classic()
-combine2<-combine+geom_point(atl_merge4,aes(middepth1d,planarextent2d))+  geom_smooth(method='lm',se=F)
-  
-  geom_point(aes(y=planarextent2d),color="blue",size=1.5)+
-  geom_smooth(method='lm',se=F)+
-  scale_y_continuous(trans='log2')+
-  scale_x_continuous(trans='log2')+
-  labs(x="species' mid-depth",y="bathymetric extent")+
-  theme_classic()+
-  theme(plot.background=element_rect(fill="transparent"),
-        plot.margin=unit(c(2,0,1,1),units="lines"))
-
-combine2
-install.packages("gridExtra")
-library(gridExtra)
-install.packages("grid")
-library(grid)
-
-g.bottom<-ggplot(atl_merge4,aes(x=middepth1d,y=depthrange1d))+
-  geom_point()+
-  geom_point(aes(y=planarextent2d),color="blue",size=1.5)+
-  scale_y_continuous(expand=c(0,0),limits=c(0,5,000))+
-  scale_y_continuous(trans='log2')+
-  scale_x_continuous(trans='log2')+
-  labs(x="species' mid-depth",y="bathymetric extent")+
-  theme_classic() +
-  theme(plot.background = element_rect(fill = "transparent"),
-  plot.margin = unit(c(2,0,1,1),units="lines"))
-g.bottom
-
-g.y<-ggplot(atl_merge4, aes(x=middepth1d,y=planarextent2d))+
-  theme_classic()+
-  geom_point(color="transparent")+
-  scale_y_continuous(expand=c(0,0), limits=c(0,2500000))+
-  labs(y="lab2")+
-    theme(axis.title.y = element_text(vjust = 4.5, hjust = 0.88,angle = 270),  
-        ## Adjust the justification of the y axis labels
-        axis.text.y = element_text(hjust=0),  
-        ## Reverse the ticks to go on the other side
-        axis.ticks.length = unit(-0.15,"cm"),
-        ## Reverse spacing between ticks and text to move text to the right
-        axis.ticks.margin = unit(-0.5, "cm"), 
-        axis.title.x = element_blank(), ## Remove all x-axis attributes
-        axis.text.x = element_blank(),
-        axis.ticks.x = element_blank(),
-        axis.line.x = element_blank(),
-        plot.background = element_rect(fill = "transparent"),
-        plot.margin = unit(c(2,0,3.85,-1.5),units="lines"))
-vp1 <- viewport(width = 0.9, height = 1, x = 0, y = 0.5, just = c(0,0.5))
-vp2 <- viewport(width = 0.1, height = 1, x = 0.9, y = 0.5,just = c(0,0.5))
-
-print(g.bottom, vp=vp1)
-print(g.y, vp=vp2)
-ggsave(filename="test.tiff",path="figs/")
-
-
-lm(depthrange1d~middepth1d)
- model<-lm(depthrange1d~middepth1d)
-par(mfrow=c(2,2)) 
-plot(model)
-Ma1<-lm(formula=depthrange1d~middepth1d)
-summary(Ma1)
-Ma2<-lm(depthrange1d~middepth1d,subset=(1:length(depthrange1d)!=1))
-summary(Ma2)
-
-lm(planarextent2d~middepth1d)
-model<-lm(planarextent2d~middepth1d)
-par(mfrow=c(2,2)) 
-plot(model)
-Mb1<-lm(formula=planarextent2d~middepth1d)
-summary(Mb1)
-Mb2<-lm(planarextent2d~middepth1d,subset=(1:length(planarextent2d)!=1))
-summary(Mb2)
-
-p1a
-ggsave(filename="atl_range_depth_range.tiff",path="figs/")
-p2a
-ggsave(filename="atl_range_depth_planar.tiff",path="figs/")
-
-plot_grid(p1a, p2a, align="v",ncol=1)
-ggsave(filename="atl_range_depth.tiff",path="figs/")
-```
-
-4. produce figures for range size with depth
-4b. Indian Ocean
-
-```{r}
-attach(ind_merge4)
-#1d ind depth range vs mid depth
-p1a<-ggplot(ind_merge4,aes(middepth1d,depthrange1d),label=species1)+
-  geom_point()+
-  #stat_quantile(quantiles=c(.01,.99))+
-  theme_classic()+
-  #xlim(0,5500)+
-    scale_y_continuous(trans='log2')+
-    scale_x_continuous(trans='log2')+
-  #geom_text(aes(label=ifelse(middepth2d>1,as.character(species1),'')),hjust=0,vjust=0)+
-  labs(x = "mid depth of depth range",y="log depth range extent")+
-  geom_smooth(method='lm',se=F)
-
-#2d atl area vs mid depth
-p2a<-ggplot(ind_merge4,aes(middepth1d,planarextent2d))+
-  geom_point()+
-  #stat_quantile(quantiles=c(.01,.99))+
-  theme_classic()+
-  #xlim(0,5500)+
-    scale_y_continuous(trans='log2')+
-    scale_x_continuous(trans='log2')+
-  #geom_text(aes(label=ifelse(middepth2d>1,as.character(species1),'')),hjust=0,vjust=0)+
-  labs(x = "mid depth of planar area",y="log planar range extent")+
-  geom_smooth(method='lm',se=F)
-
-comb<-p2a+geom_point(aes(y=depthrange1d))
-comb
-
-lm(depthrange1d~middepth1d)
-model<-lm(depthrange1d~middepth1d)
-par(mfrow=c(2,2)) 
-plot(model)
-Ma1<-lm(formula=depthrange1d~middepth1d)
-summary(Ma1)
-Ma2<-lm(depthrange1d~middepth1d,subset=(1:length(depthrange1d)!=1))
-summary(Ma2)
-
-lm(planarextent2d~middepth1d)
-model<-lm(planarextent2d~middepth1d)
-par(mfrow=c(2,2)) 
-plot(model)
-Mb1<-lm(formula=planarextent2d~middepth1d)
-summary(Mb1)
-Mb2<-lm(planarextent2d~middepth1d,subset=(1:length(planarextent2d)!=1))
-summary(Mb2)
-
-p1a
-ggsave(filename="ind_range_depth_range.tiff",path="figs/")
-p2a
-ggsave(filename="ind_range_depth_planar.tiff",path="figs/")
-
-plot_grid(p1a, p2a, align="v",ncol=1)
-ggsave(filename="ind_range_depth.tiff",path="figs/")
-
-```
-
-4. produce figures for range size with depth
-4c. Pacific Ocean
-
-```{r}
-attach(pac_merge4)
-#1d pac depth range vs mid depth
-p1<-ggplot(pac_merge4,aes(mid_depth,bathy_range),label=species1)+
-  geom_point()+
- # stat_quantile(quantiles=c(.01,.99))+
-  theme_classic()+
-      scale_y_continuous(trans='log2')+
-    scale_x_continuous(trans='log2')+
- # geom_text(aes(label=ifelse(depth==68.5|depth==784.75|depth==4005,as.character(species1),'')),hjust=0,vjust=0)+
-  labs(x = " log mid depth of depth range",y="log depth range extent")+
-    geom_smooth(method='lm',se=F)
-
-#2d pac area vs mid depth
-p2<-ggplot(pac_merge4,aes(mid_depth,area))+
-  geom_point()+
-#  stat_quantile(quantiles=c(.01,.99))+
-  theme_classic()+
-      scale_y_continuous(trans='log2')+
-    scale_x_continuous(trans='log2')+
-#  geom_text(aes(label=ifelse(depth==68.5|depth==784.75|depth==4005,as.character(species1),'')),hjust=0,vjust=0)+
-  labs(x = " log mid depth of planar area",y="log planar range extent")+
-    geom_smooth(method='lm',se=F)
-
-comb<-p2+geom_point(aes(y=bathy_range))
-comb
-
-lm(bathy_range~mid_depth)
-model<-lm(bathy_range~mid_depth)
-par(mfrow=c(2,2)) 
-plot(model)
-Ma1<-lm(formula=bathy_range~mid_depth)
-summary(Ma1)
-Ma2<-lm(depthrange1d~middepth1d,subset=(1:length(depthrange1d)!=1))
-summary(Ma2)
-
-lm(area~mid_depth)
-model<-lm(area~mid_depth)
-par(mfrow=c(2,2)) 
-plot(model)
-Mb1<-lm(formula=area~mid_depth)
-summary(Mb1)
-Mb2<-lm(planarextent2d~middepth1d,subset=(1:length(planarextent2d)!=1))
-summary(Mb2)
-
-
-p1
-ggsave(filename="pac_range_depth_range.tiff",path="figs/")
-p2
-ggsave(filename="pac_range_depth_planar.tiff",path="figs/")
-
-plot_grid(p1, p2, align="v",nrow=2)
-
-ggsave(filename="pac_range_depth.tiff",path="figs/")
-
-```
-5. produce figures for range size with latitude
-5a. Atlantic Ocean
-
-```{r}
-
-#range size with latitude
-attach(atl_merge5)
-p1b<-ggplot(atl_merge5,aes(absmidlat1d,latrange1d))+
-  geom_point()+
-#  stat_quantile(quantiles=c(.01,.99))+
-  theme_classic()+
- xlim(0,70)+
-      scale_y_continuous(trans='log2')+
-    scale_x_continuous(trans='log2')+
-#  geom_text(aes(label=ifelse(middepth2d==735.5|middepth2d==59.5,as.character(species1),'')),hjust=0,vjust=0)+
-  labs(x = "log mid lat of lat range",y="log lat range extent")+
-      geom_smooth(method='lm',se=F)
-
-#1d geog extent vs mid lat
-p2b<-ggplot(atl_merge5,aes(absmidlat1d,planarextent1dgeog))+
-  geom_point()+
- # stat_quantile(quantiles=c(.01,.99))+
-  theme_classic()+
-  xlim(0,70)+
-      scale_y_continuous(trans='log2')+
-    scale_x_continuous(trans='log2')+
-  #geom_text(aes(label=ifelse(middepth2d==735.5|middepth2d==59.5,as.character(species1),'')),hjust=0,vjust=0)+
-  labs(x = "log mid lat of geographic range",y="log geographic range extent")+
-      geom_smooth(method='lm',se=F)
-
-#2d atl area vs mid lat
-p3b<-ggplot(atl_merge5,aes(absmidlat1d,planarextent2d))+
-  geom_point()+
- # stat_quantile(quantiles=c(.01,.99))+
-  theme_classic()+
-#  xlim(0,70)+
-      scale_y_continuous(trans='log2')+
-    scale_x_continuous(trans='log2')+
- # geom_text(aes(label=ifelse(middepth2d==735.5|middepth2d==59.5,as.character(species1),'')),hjust=0,vjust=0)+
-  labs(x = "log mid lat of planar area",y="log planar range extent")+
-    geom_smooth(method='lm',se=F)
-
-comb<-p2b+geom_point(aes(y=planarextent2d))
-comb
-ggsave(filename="combineplot.tiff",path="figs/")
-
-lm(latrange1d~absmidlat1d)
-model<-lm(latrange1d~absmidlat1d)
-par(mfrow=c(2,2)) 
-plot(model)
-Ma1<-lm(latrange1d~absmidlat1d)
-summary(Ma1)
-Ma2<-lm(depthrange1d~middepth1d,subset=(1:length(depthrange1d)!=1))
-summary(Ma2)
-
-lm(planarextent1dgeog~absmidlat1d)
-model<-lm(planarextent1dgeog~absmidlat1d)
-par(mfrow=c(2,2)) 
-plot(model)
-Ma1<-lm(planarextent1dgeog~absmidlat1d)
-summary(Ma1)
-Ma2<-lm(depthrange1d~middepth1d,subset=(1:length(depthrange1d)!=1))
-summary(Ma2)
-
-lm(planarextent2d~absmidlat1d)
-model<-lm(planarextent2d~absmidlat1d)
-par(mfrow=c(2,2)) 
-plot(model)
-Ma1<-lm(planarextent2d~absmidlat1d)
-summary(Ma1)
-Ma2<-lm(depthrange1d~middepth1d,subset=(1:length(depthrange1d)!=1))
-summary(Ma2)
-
-
-p1b
-ggsave(filename="atl_range_latitude_extent.tiff",path="figs/")
-p2b
-ggsave(filename="atl_range_latitude_geog.tiff",path="figs/")
-p3b
-ggsave(filename="atl_range_latitude_2d.tiff",path="figs/")
-
-
-plot_grid(p1b, p2b, p3b, align="v",ncol=1)
-
-ggsave(filename="atl_range_latitude.tiff",path="figs/")
-
-```
-
-5. produce figures for range size with latitude
-5b. Indian Ocean
-
-```{r}
-attach(ind_merge4)
-p1b<-ggplot(ind_merge4,aes(absmidlat1d,latrange1d))+
-  geom_point()+
-  #stat_quantile(quantiles=c(.01,.99))+
-  theme_classic()+
-      scale_y_continuous(trans='log2')+
-    scale_x_continuous(trans='log2')+
-#  geom_text(aes(label=ifelse(middepth2d>1,as.character(species1),'')),hjust=0,vjust=0)+
-  labs(x = "log mid lat of lat range",y="log lat range extent")+
-      geom_smooth(method='lm',se=F)
-
-#1d geog extent vs mid lat
-p2b<-ggplot(ind_merge4,aes(absmidlat1d,log(planarextent1dgeog)))+
-  geom_point()+
- # stat_quantile(quantiles=c(.01,.99))+
-  theme_classic()+
-      scale_y_continuous(trans='log2')+
-    scale_x_continuous(trans='log2')+
-#  geom_text(aes(label=ifelse(middepth2d>1,as.character(species1),'')),hjust=0,vjust=0)+
-  labs(x = "log mid lat of geographic range",y="log geographic range extent")+
-      geom_smooth(method='lm',se=F)
-  
-#2d atl area vs mid lat
-p3b<-ggplot(ind_merge4,aes(absmidlat1d,planarextent2d))+
-  geom_point()+
- # stat_quantile(quantiles=c(.01,.99))+
-  theme_classic()+
-      scale_y_continuous(trans='log2')+
-    scale_x_continuous(trans='log2')+
- # geom_text(aes(label=ifelse(middepth2d>1,as.character(species1),'')),hjust=0,vjust=0)+
-  labs(x = "log mid lat of planar area",y="log planar range extent")+
-      geom_smooth(method='lm',se=F)
-
-lm(latrange1d~absmidlat1d)
-model<-lm(latrange1d~absmidlat1d)
-par(mfrow=c(2,2)) 
-plot(model)
-Ma1<-lm(latrange1d~absmidlat1d)
-summary(Ma1)
-Ma2<-lm(depthrange1d~middepth1d,subset=(1:length(depthrange1d)!=1))
-summary(Ma2)
-
-lm(planarextent1dgeog~absmidlat1d)
-model<-lm(planarextent1dgeog~absmidlat1d)
-par(mfrow=c(2,2)) 
-plot(model)
-Ma1<-lm(planarextent1dgeog~absmidlat1d)
-summary(Ma1)
-Ma2<-lm(depthrange1d~middepth1d,subset=(1:length(depthrange1d)!=1))
-summary(Ma2)
-
-lm(planarextent2d~absmidlat1d)
-model<-lm(planarextent2d~absmidlat1d)
-par(mfrow=c(2,2)) 
-plot(model)
-Ma1<-lm(planarextent2d~absmidlat1d)
-summary(Ma1)
-Ma2<-lm(depthrange1d~middepth1d,subset=(1:length(depthrange1d)!=1))
-summary(Ma2)
-
-p1b
-ggsave(filename="ind_range_latitude_extent.tiff",path="figs/")
-p2b
-ggsave(filename="ind_range_latitude_geog.tiff",path="figs/")
-p3b
-ggsave(filename="ind_range_latitude_2d.tiff",path="figs/")
-
-
-plot_grid(p1b,p2b, p3b,ncol=1)
-ggsave(filename="ind_range_latitude.tiff",path="figs/")
-```
-
-5. produce figures for range size with latitude
-5c. Pacific Ocean
-
-```{r}
-#1d pac lat range vs mid lat
-
-attach(pac_merge4)
-
-p1<-ggplot(pac_merge4,aes(abs_mid_lat,lat_range))+
-  geom_point()+
- # stat_quantile(quantiles=c(.01,.99))+
-  theme_classic()+
-  #xlim(-1,4)+
-      scale_y_continuous(trans='log2')+
-    scale_x_continuous(trans='log2')+
- # geom_text(aes(label=ifelse(depth==68.5|depth==784.75|depth==4005,as.character(species1),'')),hjust=0,vjust=0)+
-  labs(x = " log mid lat of lat range",y="log lat range extent")+
-        geom_smooth(method='lm',se=F)
-
-#1d geog extent vs mid lat
-p2<-ggplot(pac_merge4,aes(abs_mid_lat,area_geog_combine))+
-  geom_point()+
- # stat_quantile(quantiles=c(.01,.99))+
-  theme_classic()+
-  #xlim(-1,4)+
-      scale_y_continuous(trans='log2')+
-    scale_x_continuous(trans='log2')+
-#  geom_text(aes(label=ifelse(depth==68.5|depth==784.75|depth==4005,as.character(species1),'')),hjust=0,vjust=0)+
-  labs(x = "log mid lat of geographic range",y="log geographic range extent")+
-        geom_smooth(method='lm',se=F)
-
-#2d atl area vs mid lat
-p3<-ggplot(pac_merge4,aes(abs_mid_lat,area))+
-  geom_point()+
-#  stat_quantile(quantiles=c(.01,.99))+
-  theme_classic()+
- #xlim(-1,4)+
-      scale_y_continuous(trans='log2')+
-    scale_x_continuous(trans='log2')+
-#  geom_text(aes(label=ifelse(depth==68.5|depth==784.75|depth==4005,as.character(species1),'')),hjust=0,vjust=0)+
-  labs(x = " log mid lat of planar area",y="log planar range extent")+
-        geom_smooth(method='lm',se=F)
-
-
-
-lm(lat_range~abs_mid_lat)
-model<-lm(lat_range~abs_mid_lat)
-par(mfrow=c(2,2)) 
-plot(model)
-Ma1<-lm(lat_range~abs_mid_lat)
-summary(Ma1)
-Ma2<-lm(depthrange1d~middepth1d,subset=(1:length(depthrange1d)!=1))
-summary(Ma2)
-
-lm(area_geog_combine~abs_mid_lat)
-model<-lm(area_geog_combine~abs_mid_lat)
-par(mfrow=c(2,2)) 
-plot(model)
-Ma1<-lm(area_geog_combine~abs_mid_lat)
-summary(Ma1)
-Ma2<-lm(depthrange1d~middepth1d,subset=(1:length(depthrange1d)!=1))
-summary(Ma2)
-
-lm(area~abs_mid_lat)
-model<-lm(area~abs_mid_lat)
-par(mfrow=c(2,2)) 
-plot(model)
-Ma1<-lm(area~abs_mid_lat)
-summary(Ma1)
-Ma2<-lm(depthrange1d~middepth1d,subset=(1:length(depthrange1d)!=1))
-summary(Ma2)
-
-
-p1
-ggsave(filename="pac_range_latitude_extent.tiff",path="figs/")
-p2
-ggsave(filename="pac_range_latitude_geog.tiff",path="figs/")
-p3
-ggsave(filename="pac_range_latitude_2d.tiff",path="figs/")
-
-plot_grid(p1, p2, p3, align="v",nrow=3)
-
-ggsave(filename="pac_range_latitude.tiff",path="figs/")
-
-```
 
 combined range size tables to 1 and added group per ocean
 ```{r}
@@ -899,59 +402,48 @@ ggsave(filename="range_depth.tiff",path="figs/")
 
 ```
 
-plotting bound alone
-```{r}
 
 
-
-  
-attach(bound_type_test)
-
-  bound_test<-ggplot(bound_type_test,aes(x=mid_depth,y=area))+ geom_point()+
-  geom_smooth(data=subset(bound_type_test,species=="bound"),aes(x=mid_depth,y=area,color="red"),method="lm",formula=y~poly(x,2),se=F)+
-  #scale_y_continuous(trans='log2')+
-  #scale_x_continuous(trans='log2')+
-  facet_wrap(~type,ncol=1,scales="free")
-  
-  bound_test
-  ggsave(filename="bound_atl.tiff",path="figs/")
-
-```
-
-
+to plot atl mid lat vs lat extent
 ```{r}  
 library(tidyverse)
 library(plotly)
 library(cowplot)
 library(sp)
 library(quantreg)
-  
+
   attach(atl_ranges)
   
   atl_subset<-subset(atl_ranges,ocean=="atl")
+  #atl_subset<-atl_subset %>% mutate(mid=mid+81)
   atl_lat_range_subset<-subset(atl_subset,type=="lat_range")
-  atl_lat_range_subset<-subset(atl_lat_range_subset,!(species=="bound"))
+ # atl_lat_range_subset<-subset(atl_lat_range_subset,!(species=="bound"))
 
-  atl_lat_range_subset<-atl_lat_range_subset %>% mutate(mid=mid+5)
+ #atl_lat_range_subset<-atl_lat_range_subset %>% mutate(mid=mid+80)
 #  atl_lat_range_subset<-atl_lat_range_subset %>% mutate(area=area+5)
 
   
   atl_lat_plot<-ggplot(data=atl_lat_range_subset,aes(mid,area))+
     geom_point()+
+      geom_smooth(data=subset(atl_lat_range_subset, atl_lat_range_subset$species!="bound"),method="lm",se=F)+
     geom_point(color=ifelse(atl_lat_range_subset$species=="bound","red","black"))+
-  scale_y_continuous(trans='log2')+
-  scale_x_continuous(trans='log2')+
+  scale_y_continuous()+
+  scale_x_continuous(breaks=c(-80,-45,0,45,80))+
       theme_classic()+
   xlab("mid latitude (degrees latitude)")+
   ylab("latitudinal extent (m)")
+
     
 atl_lat_plot
   ggsave(filename="atl_lat_plot.tiff",path="figs/")
   
-  
 ```
 
+(added 81 to each mid lat to remove negitive values and allow the data to be logged)
+this shows that range size with latitude relates to the 0 to 80degree latitude boundary and that no species (included in this study) have mid ranges
+in the lower half of the globe. worth noting that at least one species, bathypathes bifara, has a mid latitude of -66; however, it had too few occurrence points to make 2d area measurments.
 
+to plot mid lat vs geog extent
 ```{r}
 library(tidyverse)
 library(plotly)
@@ -962,27 +454,33 @@ library(quantreg)
   attach(atl_ranges)
   
   atl_subset<-subset(atl_ranges,ocean=="atl")
-  atl_lat_range_subset<-subset(atl_subset,type=="lat_geog_range")
-  atl_lat_range_subset<-subset(atl_lat_range_subset,!(species=="bound"))
+  #atl_subset<-atl_subset %>% mutate(mid=mid+81)
+  atl_lat_geog_range_subset<-subset(atl_subset,type=="lat_geog_range")
 
   
-  atl_lat_range_subset<-atl_lat_range_subset %>% mutate(mid=mid+5)
+ # atl_lat_geog_range_subset<-atl_lat_range_subset %>% mutate(mid=mid+5)
  # atl_lat_range_subset<-atl_lat_range_subset %>% mutate(area=area+5)
 
   
-  atl_lat_geog_plot<-ggplot(data=atl_lat_range_subset,aes(mid,area))+
+  atl_lat_geog_plot<-ggplot(data=atl_lat_geog_range_subset,aes(mid,area))+
     geom_point()+
-    geom_point(color=ifelse(atl_lat_range_subset$species=="bound","red","black"))+
-  scale_y_continuous(trans='log2')+
-  scale_x_continuous(trans='log2')+
-      theme_classic()+
+    geom_smooth(data=subset(atl_lat_geog_range_subset, atl_lat_geog_range_subset$species!="bound"),method="lm",se=F)+
+    geom_point(color=ifelse(atl_lat_geog_range_subset$species=="bound","red","black"))+
+ #scale_y_continuous(trans='log2')+
+#scale_x_continuous(trans='log2')+
+    scale_x_continuous(breaks=c(0,45,80,125,180))+
+    theme_classic()+
   xlab("mid latitude (degrees latitude)")+
-  ylab("latitudinal extent (m)")
+  ylab("geographic extent (m2)")
     
 atl_lat_geog_plot
   ggsave(filename="atl_lat_geog_plot.tiff",path="figs/")
 
 ```
+same discussion as lat extent plot above. similar trends despite adding long dimension; however notably, most ranges did not extend to the largest possible ranges for their mid geog.it is more revealing than just observing lat extents as species lat extents are closer to max possible extents, but in terms of geog, they fall short, revealing more realistic range extents.
+
+to plot mid lat vs planar extent
+
 ```{r}
 library(tidyverse)
 library(plotly)
@@ -993,78 +491,204 @@ library(quantreg)
   attach(atl_ranges)
   
   atl_subset<-subset(atl_ranges,ocean=="atl")
-  atl_lat_range_subset<-subset(atl_subset,type=="lat_planar_range")
-  atl_lat_range_subset<-subset(atl_lat_range_subset,!(species=="bound"))
+  #atl_subset<-atl_subset %>% mutate(mid=mid+81)
+  atl_lat_planar_subset<-subset(atl_subset,type=="lat_planar_range")
 
   
-  atl_lat_range_subset<-atl_lat_range_subset %>% mutate(mid=mid+5)
+  #atl_lat_planar_range_subset<-atl_lat_planar_range_subset %>% mutate(mid=mid+5)
  # atl_lat_range_subset<-atl_lat_range_subset %>% mutate(area=area+5)
 
   
-  atl_lat_planar_plot<-ggplot(data=atl_lat_range_subset,aes(mid,area))+
+  atl_lat_planar_plot<-ggplot(data=atl_lat_planar_subset,aes(mid,area))+
     geom_point()+
-    geom_point(color=ifelse(atl_lat_range_subset$species=="bound","red","black"))+
- scale_y_continuous(trans='log2')+
- scale_x_continuous(trans='log2')+
-      theme_classic()+
+    geom_smooth(data=subset(atl_lat_planar_subset, atl_lat_planar_subset$species!="bound"),method="lm",se=F)+
+    geom_point(color=ifelse(atl_lat_planar_subset$species=="bound","red","black"))+
+ #scale_y_continuous(trans='log2')+
+    scale_x_continuous(breaks=c(0,45,80,125,160))+
+    theme_classic()+
   xlab("mid latitude (degrees latitude)")+
-  ylab("latitudinal extent (m)")
+  ylab("planar extent (m2)")
     
 atl_lat_planar_plot
-  ggsave(filename="atl_lat_geog_plot.tiff",path="figs/")
+  ggsave(filename="atl_lat_planar_plot.tiff",path="figs/")
 
 ```
 
+same trend as previous two despite adding final dimension. the reason why the pattern does not change between geog and planar is because the geographic extent is much larger than the bathymetric extent. therefore adding the depth dimension for ranges that occur across the entire ocean is insignificant. for this reason, range sizes tent to simply double from geographic to planar range extents.thereofre, understanding how range sizes change over large geographic ranges does not require consideration of depth unless you are attempting to use that data to infer species richness in multiple dimensions, where despite the smaller relative size depth is to geography, you will observe differences in richness along depth gradient as species can overlap geographically but be bathymetrically separated.
 
 
+to plot atl mid long vs long extent
 ```{r}
-z2a<-ggplot(atl_pac_range_size_fix, aes(mid_lat,lat_range,shape==group,color=group,fill=group))+
-  geom_smooth(method="lm",se=F)+
-  scale_y_continuous(trans='log2')+
-  scale_x_continuous(trans='log2')+
-  geom_point(size=3)+
-  theme_classic()+
-  xlab("mid lat (m)")+
-  ylab("lat extent m")+
-  facet_wrap(~group,ncol=1)+
-  theme(strip.text.x = element_blank())
-  geom_text(aes(label=ifelse(mid_depth==256.500,as.character(species),'')),hjust=0,vjust=0)
+library(tidyverse)
+library(plotly)
+library(cowplot)
+library(sp)
+library(quantreg)
+  
+  attach(atl_ranges)
+  
+  atl_subset<-subset(atl_ranges,ocean=="atl")
+  #atl_subset<-atl_subset %>% mutate(mid=mid+80)
+  #atl_subset<-atl_subset %>% mutate(area=area+5)
+  atl_long_range_subset<-subset(atl_subset,type=="long_range")
 
-
-z2a
-
-z2b<-ggplot(atl_pac_range_size_fix, aes(mid_lat,geog_range,shape==group,color=group,fill=group))+
-  geom_smooth(method="lm",se=F)+
-  scale_y_continuous(trans='log2')+
-  scale_x_continuous(trans='log2')+
-  geom_point(size=3)+
-  theme_classic()+
-  xlab("mid lat (m)")+
-  ylab("geog extent m2")+
-  facet_wrap(~group,ncol=1)+
-  theme(strip.text.x = element_blank())
-  geom_text(aes(label=ifelse(mid_depth==256.500,as.character(species),'')),hjust=0,vjust=0)
-
-z2b
-
-z2c<-ggplot(atl_pac_range_size_fix, aes(mid_lat,planar_range,shape==group,color=group,fill=group))+
-  geom_smooth(method="lm",se=F)+
-  scale_y_continuous(trans='log2')+
-  scale_x_continuous(trans='log2')+
-  geom_point(size=3)+
-  theme_classic()+
-  xlab("mid lat (m)")+
-  ylab("planar extent m2")+
-  facet_wrap(~group,ncol=1)+
-  theme(strip.text.x = element_blank())
-  geom_text(aes(label=ifelse(mid_depth==256.500,as.character(species),'')),hjust=0,vjust=0)
-
-z2c
-
-plot_grid(z2a,z2b,z2c, align="v",ncol=1)
-ggsave(filename="range_latitude.tiff",path="figs/")
+  
+  atl_long_plot<-ggplot(data=atl_long_range_subset,aes(mid,area))+
+    geom_point()+
+    geom_smooth(data=subset(atl_long_range_subset, atl_long_range_subset$species!="bound"),method="loess",span=.9,se=F)+
+    geom_point(color=ifelse(atl_long_range_subset$species=="bound","red","black"))+
+  #scale_y_continuous(trans='log2')+
+  #scale_x_continuous(trans='log2')+
+      theme_classic()+
+  xlab("mid longitude (decimal degrees)")+
+  ylab("longitude extent (m)")
+    
+atl_long_plot
+  ggsave(filename="atl_long_plot.tiff",path="figs/")
 
 ```
+longitude ranges relate to bounds where species in the middle of the atlantic ocean have the largest longitude extents (must be deep species).
+
+to plot atl mid long vs geog extent
+```{r}
+library(tidyverse)
+library(plotly)
+library(cowplot)
+library(sp)
+library(quantreg)
+  
+  attach(atl_ranges)
+  
+  atl_subset<-subset(atl_ranges,ocean=="atl")
+  #atl_subset<-atl_subset %>% mutate(mid=mid+80)
+  atl_subset<-atl_subset %>% mutate(area=area+5)
+  atl_long_geog_range_subset<-subset(atl_subset,type=="long_geog_range")
+
+  
+  atl_long_geog_plot<-ggplot(data=atl_long_geog_range_subset,aes(mid,area))+
+    geom_point()+
+    geom_smooth(data=subset(atl_long_geog_range_subset, atl_long_geog_range_subset$species!="bound"),method="loess",span=.9,se=F)+
+    geom_point(color=ifelse(atl_long_range_subset$species=="bound","red","black"))+
+ # scale_y_continuous(trans='log2')+
+  #scale_x_continuous(trans='log2')+
+      theme_classic()+
+  xlab("mid longitude (decimal degrees)")+
+  ylab("geographic extent (m2)")
+    
+atl_long_geog_plot
+  ggsave(filename="atl_long_geog_plot.tiff",path="figs/")
+
+```
+similar to geographic extent of latitude, a weaker relationship between the trend and the boundary of the ocean and much lower ranges compared to the size they potentially can reach.
+
+to plot atl mid long vs planar extent
+```{r}
+
+library(tidyverse)
+library(plotly)
+library(cowplot)
+library(sp)
+library(quantreg)
+  
+  attach(atl_ranges)
+  
+  atl_subset<-subset(atl_ranges,ocean=="atl")
+  #atl_subset<-atl_subset %>% mutate(mid=mid+80)
+  atl_subset<-atl_subset %>% mutate(area=area+5)
+  atl_long_planar_range_subset<-subset(atl_subset,type=="long_planar_range")
+
+  
+  atl_long_planar_plot<-ggplot(data=atl_long_planar_range_subset,aes(mid,area))+
+    geom_point()+
+    geom_smooth(data=subset(atl_long_planar_range_subset, atl_long_planar_range_subset$species!="bound"),method="loess",span=.9,se=F)+
+    geom_point(color=ifelse(atl_long_planar_range_subset$species=="bound","red","black"))+
+ # scale_y_continuous(trans='log2')+
+  #scale_x_continuous(trans='log2')+
+      theme_classic()+
+  xlab("mid longitude (decimal degrees)")+
+  ylab("planar extent (m2)")
+    
+atl_long_planar_plot
+  ggsave(filename="atl_long_planar_plot.tiff",path="figs/")
+
+
+
+```
+similar to geog
+
+
+to plot atl mid depth vs depth extent
+```{r}
+  
+library(tidyverse)
+library(plotly)
+library(cowplot)
+library(sp)
+library(quantreg)
+  
+  attach(atl_ranges)
+  
+  atl_subset<-subset(atl_ranges,ocean=="atl")
+ #atl_subset<-atl_subset %>% mutate(mid=mid+1)
+ #atl_subset<-atl_subset %>% mutate(area=area+5)
+  atl_depth_range_subset<-subset(atl_subset,type=="depth_range")
+
+  
+  atl_depth_plot<-ggplot(data=atl_depth_range_subset,aes(mid,area))+
+    geom_point()+
+    geom_smooth(data=subset(atl_depth_range_subset, atl_depth_range_subset$species!="bound"),method="lm",span=.9,se=F)+
+    geom_point(color=ifelse(atl_depth_range_subset$species=="bound","red","black"))+
+ scale_y_continuous(trans='log2')+
+scale_x_continuous(trans='log2')+
+      theme_classic()+
+  xlab("mid depth (m)")+
+  ylab("depth extent (m)")
+    
+atl_depth_plot
+  ggsave(filename="atl_depth_plot.tiff",path="figs/")
+
+
+
+```
+species depth extents follow the vertical boundaries of the ocean and the relationship between mid depth and depth extent is strong
+
+to plot atl mid depth vs planar extent
+```{r}
+
+  
+library(tidyverse)
+library(plotly)
+library(cowplot)
+library(sp)
+library(quantreg)
+  
+  attach(atl_ranges)
+  
+  atl_subset<-subset(atl_ranges,ocean=="atl")
+ # atl_subset<-atl_subset %>% mutate(mid=mid+5)
+  #atl_subset<-atl_subset %>% mutate(area=area+5)
+  atl_depth_planar_range_subset<-subset(atl_subset,type=="depth_planar_range")
+
+  
+  atl_depth_planar_plot<-ggplot(data=atl_depth_planar_range_subset,aes(mid,area))+
+    geom_point()+
+    geom_smooth(data=subset(atl_depth_planar_range_subset, atl_depth_planar_range_subset$species!="bound"),method="lm",span=.9,se=F)+
+    geom_point(color=ifelse(atl_depth_planar_range_subset$species=="bound","red","black"))+
+  scale_y_continuous(trans='log2')+
+  scale_x_continuous(trans='log2')+
+      theme_classic()+
+  xlab("mid depth (m)")+
+  ylab("planar extent (m)")
+    
+atl_depth_planar_plot
+  ggsave(filename="atl_depth_planar_plot.tiff",path="figs/")
+
+
+```
+
+planar range extents do not extend to bounds of ocean. we have a less significant relationship between mid depth and planar extent. lastly, studies stress that range size increases with depth. that is true until the mid depth of the species = the deepest depth of the ocean basin. beyond that depth, range sizes become smaller. likely explantion for why this hasnt been formally stated is because we lack survey effort in deep and finding deep species with small ranges is even harder!
+
+
 
 
 
