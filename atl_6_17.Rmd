@@ -156,6 +156,60 @@ write.csv(atl_merge4,"output/atl_merge4.csv")
 
 ```
 
+pacific ocean data
+```{r}
+
+attach(pacific_species)
+
+
+#to compare 2d analysis to 1d analysis, first create empty dataframe to insert min and max range of depth, lat, and long per species
+one_d_p <- data.frame(species = character(), 
+                    min_depth = integer(), 
+                    max_depth = integer(),
+                    min_lat=integer(),
+                    max_lat=integer(),
+                    min_long=integer(),
+                    max_long=integer(),
+                    stringsAsFactors = FALSE)
+
+#to sort the data by species, and then by the other factors
+species_sorted_pac <- pacific_species[order(pacific_species$species, pacific_species$depth, pacific_species$decimalLat, pacific_species$decimalLon),]
+
+#for loop: go through species_sorted and pull out the min and max depth, lat, to create the 1d ranges 
+for (i in 1:length(unique(species_sorted_pac$species))) {
+  one_d_p[i,1] <- as.character(unique(species_sorted_pac$species)[i]) # species name
+  one_d_p[i,2] <- as.numeric(min(species_sorted_pac[which(species_sorted_pac$species == one_d_p[i,1]),]$depth)) #min depth
+  one_d_p[i,3] <- as.numeric(max(species_sorted_pac[which(species_sorted_pac$species == one_d_p[i,1]),]$depth)) #max depth
+  one_d_p[i,4] <- as.numeric(min(species_sorted_pac[which(species_sorted_pac$species == one_d_p[i,1]),]$decimalLat)) #min lat
+  one_d_p[i,5] <- as.numeric(max(species_sorted_pac[which(species_sorted_pac$species == one_d_p[i,1]),]$decimalLat)) #max lat
+  one_d_p[i,6] <- as.numeric(min(species_sorted_pac[which(species_sorted_pac$species == one_d_p[i,1]),]$decimalLon)) #min lon
+  one_d_p[i,7] <- as.numeric(max(species_sorted_pac[which(species_sorted_pac$species == one_d_p[i,1]),]$decimalLon)) #max lon
+}
+
+#to calculate mid depth and bathy range size per species and add to one_d table
+one_d_p<-one_d_p %>% mutate(mid_depth=(min_depth + max_depth)/2)
+one_d_p<-one_d_p %>% mutate(bathy_range=(max_depth - min_depth))
+
+#to calculate mid lat and lat range size per species and add to one_d table
+one_d_p<-one_d_p %>% mutate(mid_lat=(min_lat + max_lat)/2)
+one_d_p<-one_d_p %>% mutate(lat_range=(max_lat - min_lat))
+
+#to calculate mid lat and lat range size per species and add to one_d table
+one_d_p<-one_d_p %>% mutate(mid_lon=(min_long + max_long)/2)
+one_d_p<-one_d_p %>% mutate(long_range=(max_long - min_long))
+
+write.csv(one_d_p,"output/pac_metadata.csv")
+
+
+
+
+```
+
+
+
+
+
+
 3. analyses to produce range size with depth and latitude plots
 3b. Indian ocean
 ```{r}
