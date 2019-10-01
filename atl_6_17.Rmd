@@ -481,7 +481,7 @@ library(quantreg)
     geom_point()+
       geom_smooth(data=subset(atl_lat_range_subset, atl_lat_range_subset$species!="bound"),method="lm",se=F)+
     geom_point(color=ifelse(atl_lat_range_subset$species=="bound","red","black"))+
- scale_y_continuous(trans='log2')+
+ scale_y_continuous(trans='log2',breaks=c(2000000,4000000,8000000,16000000,32000000))+
   scale_x_continuous(breaks=c(-80,-45,0,45,80))+
       theme_classic()+
   xlab("mid latitude (degrees latitude)")+
@@ -576,12 +576,20 @@ library(plotly)
 library(cowplot)
 library(sp)
 library(quantreg)
+install.packages("ggfortify")
+library(ggfortify)
+install.packages("emmeans")
+library(emmeans)
+install.packages("ggeffects")
+library(ggeffects)
   
+
   attach(atl_ranges3)
   
   atl_subset<-subset(atl_ranges3,ocean=="pac")
   #atl_subset<-atl_subset %>% mutate(mid=mid+81)
   atl_lat_geog_range_subset<-subset(atl_subset,type=="lat_geog_range")
+  atl_lat_geog_range_subset2<-subset(atl_lat_geog_range_subset,atl_lat_geog_range_subset$species!="bound")
 
   
  # atl_lat_geog_range_subset<-atl_lat_range_subset %>% mutate(mid=mid+5)
@@ -600,7 +608,17 @@ library(quantreg)
   ylab("geographic extent (m2)")
     
 pac_lat_geog_plot
+
   ggsave(filename="pac_lat_geog_plot.tiff",path="figs/")
+  
+  pac_lat_geog_range_subset2.lm<-lm(area~mid,atl_lat_geog_range_subset2)
+  autoplot(pac_lat_geog_range_subset2.lm,which=1:6)
+  
+  summary(pac_lat_geog_range_subset2.lm)
+  
+  ggemmeans(pac_lat_geog_range_subset2.lm,~mid) %>% plot
+  
+  ggplot(pac_lat_geog_range_subset2.lm)
 
 ```
 
