@@ -497,6 +497,42 @@ atl_lat_plot
 this shows that range size with latitude relates to the 0 to 80degree latitude boundary and that no species (included in this study) have mid ranges
 in the lower half of the globe. worth noting that at least one species, bathypathes bifara, has a mid latitude of -66; however, it had too few occurrence points to make 2d area measurments.
 
+
+```{r}
+
+library(tidyverse)
+library(plotly)
+library(cowplot)
+library(sp)
+library(quantreg)
+
+  attach(atl_ranges3)
+ atl_subset<-subset(atl_ranges3,ocean=="atl")
+atl_lat_latgeog<-atl_subset[ atl_subset$type %in% c("lat_range","lat_geog_range"),]
+
+atl_lat_latgeog_nobound<-subset(atl_lat_latgeog,!(species=="bound"))
+
+mod1<-aov(area~mid*type,data=atl_lat_latgeog)
+summary(mod1)
+
+plot(x=atl_lat_latgeog_nobound$mid,
+     y=atl_lat_latgeog_nobound$area,
+     col=atl_lat_latgeog_nobound$type,
+     pch=16,
+     xlab="mid_lat",
+     ylab="range_size")
+
+
+model.1=lm(area~mid+type+mid:type,data=atl_lat_latgeog_nobound)
+install.packages("car")
+library(car)
+Anova(model.1,type"II")
+
+```
+
+
+
+
 to plot pac mid lat vs lat extent
 ```{r}  
 library(tidyverse)
