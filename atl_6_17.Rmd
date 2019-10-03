@@ -515,12 +515,22 @@ atl_lat_all<-atl_subset[ atl_subset$type %in% c("lat_range","lat_planar_range","
 ggplot(data=atl_lat_all,aes(mid,area,colour=type))+
     geom_point()+
       geom_smooth(se=F,method=lm)+
-  scale_y_continuous(trans='log2')+
+  #scale_y_continuous(trans='log2')+
   xlab("mid latitude (degrees latitude)")+
   ylab("latitudinal extent (m)")
 
+mod1<-aov(area~mid*type,data=atl_lat_all)
+summary (mod1)
+
+mod2<-aov(area~mid+type,data=atl_lat_all)
+summary (mod2)
+
+anova(mod1,mod2)
 
 ```
+mod1: area size is dependent and mid lat is the covariate, with type (1d vs 2d and 2d planar) as the factor. summary of the results show significant effect of mid lat and type, with a significant interaction, suggesting the slope of the regression between is different among the types. 
+
+
 
 plotting all lat on one plot pac
 ```{r}
