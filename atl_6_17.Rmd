@@ -530,11 +530,13 @@ summary (mod2)
 
 anova(mod1,mod2)
 
+AIC(mod1,mod2)
 pred<-predict(mod2)
 
 atl_lat_all_model_plot<-ggplot(data=cbind(atl_lat_all3,pred),
        aes(mid,area,color=type))+geom_point()+
   facet_grid(.~type)+geom_line(aes(y=pred))
+atl_lat_all_model_plot
 
  ggsave(filename="atl_lat_all_model_plot.tiff",path="figs/")
 
