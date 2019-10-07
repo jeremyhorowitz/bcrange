@@ -550,6 +550,19 @@ comparing two models  anova, interaction of the variables is insignificant p=.6.
 
 last plot is of predicted values from model2
 
+testing lat extent vs long extent vs depth extent per species
+```{r}
+attach(atl_magnitude)
+
+install.packages('scatterplot3d')
+library(scatterplot3d)
+install.packages('Rcmdr')
+library(Rcmdr)
+
+scatter3d(depth_extent,lat_extent,long_extent)
+
+```
+
 
 plotting all lat on one plot pac
 ```{r}
