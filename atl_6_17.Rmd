@@ -507,20 +507,23 @@ library(sp)
 library(quantreg)
 
 attach(atl_ranges3)
- atl_subset<-subset(atl_ranges3,ocean=="atl")
+atl_subset<-subset(atl_ranges3,ocean=="atl")
 atl_lat_all<-atl_subset[ atl_subset$type %in% c("lat_range","lat_planar_range","lat_geog_range"),]
 
+#remove bounding points
 atl_lat_all<-subset(atl_lat_all,!(species=="bound"))
-
-ggplot(data=atl_lat_all3,aes(mid,area,colour=type))+
-    geom_point()+
-      geom_smooth(se=F,method=lm)+
-  #scale_y_continuous(trans='log2')+
-  xlab("mid latitude (degrees latitude)")+
-  ylab("latitudinal extent (m)")
 
 #log the dependent variable:
 atl_lat_all3<-atl_lat_all %>% mutate(area=log10(area))
+
+write.csv(atl_lat_all3,"output/atl_lat_all3.csv")
+
+ggplot(data=atl_lat_all3,aes(mid,area,colour=type))+
+geom_point()+
+geom_smooth(se=F,method=lm)+
+#scale_y_continuous(trans='log2')+
+xlab("mid latitude (degrees latitude)")+
+ylab("latitudinal extent (m)")
 
 mod1<-aov(area~mid*type,data=atl_lat_all3)
 summary (mod1)
