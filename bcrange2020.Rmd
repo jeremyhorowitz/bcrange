@@ -37,20 +37,18 @@ attach(pac_mbg_combine_edit)
 
 ```{r}
 install.packages("tidyverse")
-
 install.packages("plotly")
-
 install.packages("cowplot")
-
 install.packages("sp")
-library(sp)
 install.packages("quantreg")
-library(quantreg)
 install.packages("reshape2")
 library(reshape2)
 library(tidyverse)
 library(plotly)
 library(cowplot)
+library(sp)
+library(quantreg)
+
 ```
 
 3. analyses to produce range size with depth and latitude plots
@@ -1506,15 +1504,26 @@ ggsave(filename="pred_atl_depth_rich3plot.tiff",path="figs/")
 7c. Pacific Ocean
 
 ```{r}
-ggplot(pac_depth_rich,aes(depth))+
-geom_line(aes(y=richness2d,color="2d"),size=1)+ 
-geom_line(aes(y=richness1d,color="1d"),size=1)+
+
+attach(pac_depth_rich)
+attach(pac_depth_rich3)
+#to convert dataset from wide to long:
+pac_depth_rich2<- melt(pac_depth_rich, id.vars=c("X1","depth"))
+pac_depth_rich2
+
+#to save output
+write.csv(pac_depth_rich2,"output/pac_depth_rich2.csv")
+
+pac_depth_rich3plot<-ggplot(data=pac_depth_rich3,aes(depth,rich,colour=type))+
+geom_line()+
+#geom_smooth(se=F,method=loess)+
 xlab(label="Depth (m)")+
 ylab("Richness")+
 theme_classic()
+pac_depth_rich3plot
 
 #to save figure 
-ggsave(filename="pac_depth_rich.tiff",path="figs/")
+ggsave(filename="pac_depth_rich3plot.tiff",path="figs/")
 
 
 
