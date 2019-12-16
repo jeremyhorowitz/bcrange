@@ -1,0 +1,2293 @@
+---
+title: "bcrange"
+author: "jeremy"
+date: "17 June 2019"
+output:
+  pdf_document: default
+  html_document: default
+---
+
+1. Datasets below are required for these analyses, seperated by ocean: Atlantic, Pacific:
+
+```{r}
+attach(occurrence_data_2)
+attach(atlantic_occurrences)
+attach(atl_volumes)
+attach(atl_range_and_lat2)
+attach(all_ready3)
+attach(atl_richness_1)
+attach(atl_richness_raw)
+#test
+```
+
+
+```{r}
+attach(occurrence_data_2)
+attach(pacific_occurrences2)
+attach(pac_merged_volumes_cleaned)
+
+attach(pac_right_mbg3)
+attach(pac_left_mbg3)
+
+#had to edit in excel because the above took means of teh 0 datapoints taht should have been excluded from analysis
+attach(pac_mbg_combine_edit)
+```
+
+2. Load these packages needed for these analyses:
+
+```{r}
+install.packages("tidyverse")
+library(tidyverse)
+install.packages("plotly")
+library(plotly)
+install.packages("cowplot")
+library(cowplot)
+install.packages("sp")
+library(sp)
+install.packages("quantreg")
+library(quantreg)
+```
+
+3. analyses to produce range size with depth and latitude plots
+3a. Atlantic Ocean
+
+```{r}
+
+#aggregate each column, grouped by species
+atl_agg<-aggregate(atlantic_occurrences,by=list(atlantic_occurrences$species),FUN=median)
+
+#rename var1 as species
+names(atl_agg)[names(atl_agg)=='Group.1']<-'species1'
+
+#take raw occurrence data, count number of points per species
+atl_species_totals<-as.data.frame(table(atlantic_occurrences$species))
+
+#rename Group.1 as species1
+names(atl_species_totals)[names(atl_species_totals)=='Var1']<-'species1'
+
+#add occurrence count to aggregated data
+atl_merge1<-merge(atl_species_totals,atl_agg,by="species1")
+
+#remove species that have less than 11 occurrence points
+atl_merge1_10<-subset(atl_merge1,Freq>9)
+
+#change volumes table name from species to species1
+names(atl_volumes)[names(atl_volumes)=='species']<-'species1'
+
+#add 2d volume data to the above
+atl_merge2<-merge(atl_merge1_10,atl_volumes,by="species1")
+
+#remove columns so only species range size freq la long depth
+atl_merge2[5:8]<-list(NULL)
+atl_merge2[6:80]<-list(NULL)
+atl_merge2[9:13]<-list(NULL)
+
+#to compare 2d analysis to 1d analysis, first create empty dataframe to insert min and max range of depth, lat, and long per species
+one_d <- data.frame(species = character(), 
+                    min_depth = integer(), 
+                    max_depth = integer(),
+                    min_lat=integer(),
+                    max_lat=integer(),
+                    stringsAsFactors = FALSE)
+
+#to sort the data by species, and then by the other factors
+species_sorted_atl <- atlantic_occurrences[order(atlantic_occurrences$species, atlantic_occurrences$depth, atlantic_occurrences$decimalLat),]
+
+#for loop: go through species_sorted and pull out the min and max depth, lat, to create the 1d ranges 
+for (i in 1:length(unique(species_sorted_atl$species))) {
+  one_d[i,1] <- as.character(unique(species_sorted_atl$species)[i]) # species name
+  one_d[i,2] <- as.numeric(min(species_sorted_atl[which(species_sorted_atl$species == one_d[i,1]),]$depth)) #min depth
+  one_d[i,3] <- as.numeric(max(species_sorted_atl[which(species_sorted_atl$species == one_d[i,1]),]$depth)) #max depth
+  one_d[i,4] <- as.numeric(min(species_sorted_atl[which(species_sorted_atl$species == one_d[i,1]),]$decimalLat)) #min lat
+  one_d[i,5] <- as.numeric(max(species_sorted_atl[which(species_sorted_atl$species == one_d[i,1]),]$decimalLat)) #max lat
+}
+
+#to calculate mid depth and bathy range size per species and add to one_d table
+one_d<-one_d %>% mutate(mid_depth=(min_depth + max_depth)/2)
+one_d<-one_d %>% mutate(bathy_range=(max_depth - min_depth))
+
+#to calculate mid lat and lat range size per species and add to one_d table
+one_d<-one_d %>% mutate(mid_lat=(min_lat + max_lat)/2)
+one_d<-one_d %>% mutate(lat_range=(max_lat - min_lat))
+
+#rename 'species' to species1' in one_d dataset, to merge datasets
+names(one_d)[names(one_d)=='species']<-'species1'
+atl_merge3<-merge(atl_merge2,one_d,by="species1")
+
+#to calculate abs value of lat values
+atl_merge3<-atl_merge3 %>% mutate(abs_mid_lat=abs(mid_lat))
+atl_merge3<-atl_merge3 %>% mutate(abs_decimalLat=abs(decimalLat))
+
+#to add geog range to 1 and 2 d data
+atl_merge4<-merge(atl_merge3,atl_range_and_lat2,by="species1")
+
+#rename columns so you remember what they are
+names(atl_merge4)[names(atl_merge4)=='mid_depth']<-'middepth1d'
+names(atl_merge4)[names(atl_merge4)=='bathy_range']<-'depthrange1d'
+
+names(atl_merge4)[names(atl_merge4)=='depth']<-'middepth2d'
+names(atl_merge4)[names(atl_merge4)=='MBV_Area']<-'planarextent2d'
+
+names(atl_merge4)[names(atl_merge4)=='abs_mid_lat']<-'absmidlat1d'
+names(atl_merge4)[names(atl_merge4)=='lat_range']<-'latrange1d'
+
+names(atl_merge4)[names(atl_merge4)=='abs_central_y']<-'absmidlat1dgeog'
+names(atl_merge4)[names(atl_merge4)=='area']<-'planarextent1dgeog'
+
+names(atl_merge4)[names(atl_merge4)=='abs_decimalLat']<-'absmidlat2d'
+names(atl_merge4)[names(atl_merge4)=='MBV_Area']<-'planarextent2d'
+
+#to convert length of lat to meters
+atl_merge4<-atl_merge4 %>% mutate(latrange1d=(latrange1d * 110635.1))
+
+
+write.csv(atl_merge4,"output/atl_merge4.csv")
+
+
+```
+
+pacific ocean data
+```{r}
+
+attach(pacific_species)
+
+
+#to compare 2d analysis to 1d analysis, first create empty dataframe to insert min and max range of depth, lat, and long per species
+one_d_p <- data.frame(species = character(), 
+                    min_depth = integer(), 
+                    max_depth = integer(),
+                    min_lat=integer(),
+                    max_lat=integer(),
+                    min_long=integer(),
+                    max_long=integer(),
+                    stringsAsFactors = FALSE)
+
+#to sort the data by species, and then by the other factors
+species_sorted_pac <- pacific_species[order(pacific_species$species, pacific_species$depth, pacific_species$decimalLat, pacific_species$decimalLon),]
+
+#for loop: go through species_sorted and pull out the min and max depth, lat, to create the 1d ranges 
+for (i in 1:length(unique(species_sorted_pac$species))) {
+  one_d_p[i,1] <- as.character(unique(species_sorted_pac$species)[i]) # species name
+  one_d_p[i,2] <- as.numeric(min(species_sorted_pac[which(species_sorted_pac$species == one_d_p[i,1]),]$depth)) #min depth
+  one_d_p[i,3] <- as.numeric(max(species_sorted_pac[which(species_sorted_pac$species == one_d_p[i,1]),]$depth)) #max depth
+  one_d_p[i,4] <- as.numeric(min(species_sorted_pac[which(species_sorted_pac$species == one_d_p[i,1]),]$decimalLat)) #min lat
+  one_d_p[i,5] <- as.numeric(max(species_sorted_pac[which(species_sorted_pac$species == one_d_p[i,1]),]$decimalLat)) #max lat
+  one_d_p[i,6] <- as.numeric(min(species_sorted_pac[which(species_sorted_pac$species == one_d_p[i,1]),]$decimalLon)) #min lon
+  one_d_p[i,7] <- as.numeric(max(species_sorted_pac[which(species_sorted_pac$species == one_d_p[i,1]),]$decimalLon)) #max lon
+}
+
+#to calculate mid depth and bathy range size per species and add to one_d table
+one_d_p<-one_d_p %>% mutate(mid_depth=(min_depth + max_depth)/2)
+one_d_p<-one_d_p %>% mutate(bathy_range=(max_depth - min_depth))
+
+#to calculate mid lat and lat range size per species and add to one_d table
+one_d_p<-one_d_p %>% mutate(mid_lat=(min_lat + max_lat)/2)
+one_d_p<-one_d_p %>% mutate(lat_range=(max_lat - min_lat))
+
+#to calculate mid lat and lat range size per species and add to one_d table
+one_d_p<-one_d_p %>% mutate(mid_lon=(min_long + max_long)/2)
+one_d_p<-one_d_p %>% mutate(long_range=(max_long - min_long))
+
+write.csv(one_d_p,"output/pac_metadata.csv")
+
+
+
+
+```
+
+
+3. analyses to produce range size with depth and latitude plots
+3c. Pacific ocean
+
+
+```{r}
+
+# to combine mbg left vs right
+
+pac_mbg_combine<-merge(pac_right_mbg3,pac_left_mbg3,by="species",all=T)
+pac_mbg_combine$area_geog_combine<-1
+pac_mbg_combine[is.na(pac_mbg_combine)]<-0
+pac_mbg_combine$area_geog_combine<-pac_mbg_combine$area_geog.x+pac_mbg_combine$area_geog.y
+pac_mbg_combine$y_median<-(pac_mbg_combine$mid_y_geog.x+pac_mbg_combine$mid_y_geog.y)/2
+
+write.csv(pac_mbg_combine,"data/pac_mbg_combine.csv")
+
+#aggregate each column, grouped by species
+pac_agg<-aggregate(pacific_occurrences2,by=list(pacific_occurrences2$species),FUN=median)
+
+#rename var1 as species
+names(pac_agg)[names(pac_agg)=='Group.1']<-'species1'
+
+#take raw occurrence data, count number of points per species
+pac_species_totals<-as.data.frame(table(pacific_occurrences2$species))
+
+#rename Group.1 as species1
+names(pac_species_totals)[names(pac_species_totals)=='Var1']<-'species1'
+
+#add occurrence count to aggregated data
+pac_merge1<-merge(pac_species_totals,pac_agg,by="species1")
+
+#remove species that have less than 11 occurrence points
+pac_merge1_10<-subset(pac_merge1,Freq>9)
+
+#change volumes table name from species to species1
+names(pac_merged_volumes_cleaned)[names(pac_merged_volumes_cleaned)=='species']<-'species1'
+
+#add volume data to the above
+pac_merge2<-merge(pac_merge1_10,pac_merged_volumes_cleaned,by="species1")
+
+#remove columns so only species range size freq la long depth
+pac_merge2[3:4]<-list(NULL)
+pac_merge2[5:8]<-list(NULL)
+pac_merge2[6:80]<-list(NULL)
+pac_merge2[8:10]<-list(NULL)
+
+#to compare 2d analysis to 1d analysis, first create empty dataframe to insert min and max range of depth, lat, and long per species
+one_d <- data.frame(species = character(), 
+                    min_depth = integer(), 
+                    max_depth = integer(),
+                    min_lat=integer(),
+                    max_lat=integer(),
+                    stringsAsFactors = FALSE)
+
+#to sort the data by species, and then by the other factors
+species_sorted_pac <- pacific_occurrences2[order(pacific_occurrences2$species, pacific_occurrences2$depth, pacific_occurrences2$decimalLat),]
+
+#for loop: go through species_sorted and pull out the min and max depth, lat, to create the 2d ranges 
+for (i in 1:length(unique(species_sorted_pac$species))) {
+  one_d[i,1] <- as.character(unique(species_sorted_pac$species)[i]) # species name
+  one_d[i,2] <- as.numeric(min(species_sorted_pac[which(species_sorted_pac$species == one_d[i,1]),]$depth)) #min depth
+  one_d[i,3] <- as.numeric(max(species_sorted_pac[which(species_sorted_pac$species == one_d[i,1]),]$depth)) #max depth
+  one_d[i,4] <- as.numeric(min(species_sorted_pac[which(species_sorted_pac$species == one_d[i,1]),]$decimalLat)) #min lat
+  one_d[i,5] <- as.numeric(max(species_sorted_pac[which(species_sorted_pac$species == one_d[i,1]),]$decimalLat)) #max lat
+}
+
+#to calculate mid depth and bathy range size per species and add to one_d table
+one_d<-one_d %>% mutate(mid_depth=(min_depth + max_depth)/2)
+one_d<-one_d %>% mutate(bathy_range=(max_depth - min_depth))
+
+#to calculate mid lat and lat range size per species and add to one_d table
+one_d<-one_d %>% mutate(mid_lat=(min_lat + max_lat)/2)
+one_d<-one_d %>% mutate(lat_range=(max_lat - min_lat))
+
+#rename 'species' to species1' in one_d dataset, to merge datasets
+names(one_d)[names(one_d)=='species']<-'species1'
+pac_merge3<-merge(pac_merge2,one_d,by="species1")
+
+#to calculate abs value of lat values
+pac_merge3<-pac_merge3 %>% mutate(abs_mid_lat=abs(mid_lat))
+pac_merge3<-pac_merge3 %>% mutate(abs_decimalLat=abs(decimalLat))
+
+#to add geog range to 1 and 2 d data
+
+names(pac_mbg_combine_edit)[names(pac_mbg_combine)=='species']<-'species1'
+
+pac_merge4<-merge(pac_merge3,pac_mbg_combine_edit,by="species1")
+
+#to calculate abs mid lat for geog data
+pac_merge4<-pac_merge4 %>% mutate(abs_y_median=abs(y_median))
+
+#to convert lat range to meters
+pac_merge4<-pac_merge4 %>% mutate(lat_range=(lat_range * 11063.51))
+
+write.csv(pac_merge4,"output/pac_merge4.csv")
+
+```
+
+
+
+combined range size tables to 1 and added group per ocean
+```{r}
+
+attach(atl_pac_range_size2)
+attach(atl_pac_range_size_fix)
+attach(atl_pac_range_size_fix2)
+
+z1a<-ggplot(atl_pac_range_size_fix, aes(mid_depth, depth_range,shape==group,color=group,fill=group))+
+  geom_smooth(method="lm",se=F)+
+  #scale_y_continuous(trans='log2')+
+  #scale_x_continuous(trans='log2')+
+  geom_point(size=3)+
+  theme_classic()+
+  xlab("mid depth (m)")+
+  ylab("depth extent m")+
+  facet_wrap(~group,ncol=1)+
+  theme(strip.text.x = element_blank())
+  geom_text(aes(label=ifelse(mid_depth==256.500,as.character(species),'')),hjust=0,vjust=0)
+
+z1a
+z1b<-ggplot(atl_pac_range_size_fix, aes(mid_depth, planar_range,shape==group,color=group,fill=group))+
+  geom_smooth(method="lm",se=F)+
+  #scale_y_continuous(trans='log2')+
+  #scale_x_continuous(trans='log2')+
+  geom_point(size=3)+
+  theme_classic()+
+  xlab("mid depth (m)")+
+  ylab("planar range extent m2")+
+  facet_wrap(~group,ncol=1)+
+  theme(strip.text.x = element_blank())
+  geom_text(aes(label=ifelse(mid_depth==1655.25,as.character(species),'')),hjust=0,vjust=0)
+
+z1b
+
+testatl<-ggplot(atl_pac_range_size_fix_atl_only_tst, aes(mid_depth, planar_range,shape==group,color=group,fill=group))+
+  geom_smooth(method="lm",se=F)+
+  scale_y_continuous(trans='log2')+
+  scale_x_continuous(trans='log2')+
+  geom_point(size=3)+
+  theme_classic()+
+  xlab("mid depth (m)")+
+  ylab("planar range extent m2")+
+  theme(strip.text.x = element_blank())
+  geom_text(aes(label=ifelse(mid_depth==1655.25,as.character(species),'')),hjust=0,vjust=0)
+  
+testatl
+ggsave(filename="testatl.tiff",path="figs/")
+
+plot_grid(z1a,z1b, align="v",ncol=2)
+ggsave(filename="range_depth.tiff",path="figs/")
+
+
+
+```
+
+
+
+to plot atl mid lat vs lat extent
+```{r}  
+library(tidyverse)
+library(plotly)
+library(cowplot)
+library(sp)
+library(quantreg)
+
+  attach(atl_ranges3)
+  
+  atl_subset<-subset(atl_ranges3,ocean=="atl")
+  #atl_subset<-atl_subset %>% mutate(mid=mid+81)
+  atl_lat_range_subset<-subset(atl_subset,type=="lat_range")
+ # atl_lat_range_subset<-subset(atl_lat_range_subset,!(species=="bound"))
+
+ #atl_lat_range_subset<-atl_lat_range_subset %>% mutate(mid=mid+80)
+#  atl_lat_range_subset<-atl_lat_range_subset %>% mutate(area=area+5)
+
+  
+  atl_lat_plot<-ggplot(data=atl_lat_range_subset,aes(mid,area))+
+    geom_point()+
+      geom_smooth(data=subset(atl_lat_range_subset, atl_lat_range_subset$species!="bound"),method="lm",se=F)+
+    geom_point(color=ifelse(atl_lat_range_subset$species=="bound","red","black"))+
+ scale_y_continuous(trans='log2',breaks=c(2000000,4000000,8000000,16000000,32000000))+
+  scale_x_continuous(breaks=c(-80,-45,0,45,80))+
+      theme_classic()+
+  xlab("mid latitude (degrees latitude)")+
+  ylab("latitudinal extent (m)")
+
+    
+atl_lat_plot
+  ggsave(filename="atl_lat_plot.tiff",path="figs/")
+  
+```
+
+(added 81 to each mid lat to remove negitive values and allow the data to be logged)
+this shows that range size with latitude relates to the 0 to 80degree latitude boundary and that no species (included in this study) have mid ranges
+in the lower half of the globe. worth noting that at least one species, bathypathes bifara, has a mid latitude of -66; however, it had too few occurrence points to make 2d area measurments.
+
+plotting all lat on one plot for atl
+```{r}
+
+library(tidyverse)
+library(plotly)
+library(cowplot)
+library(sp)
+library(quantreg)
+
+attach(atl_ranges3)
+atl_subset<-subset(atl_ranges3,ocean=="atl")
+atl_lat_all<-atl_subset[ atl_subset$type %in% c("lat_range","lat_planar_range","lat_geog_range"),]
+
+#remove bounding points
+atl_lat_all<-subset(atl_lat_all,!(species=="bound"))
+
+#log the dependent variable:
+atl_lat_all3<-atl_lat_all %>% mutate(area=log10(area))
+
+write.csv(atl_lat_all3,"output/atl_lat_all3.csv")
+
+three_lat_trends_atl<-ggplot(data=atl_lat_all3,aes(mid,area,colour=type))+
+geom_point()+
+geom_smooth(se=F,method=lm)+
+#scale_y_continuous(trans='log2')+
+xlab("mid latitude (degrees latitude)")+
+ylab("range area (m/m2)")
+three_lat_trends_atl
+
+ggsave(filename="three_lat_trends_atl.tiff",path="figs/")
+
+mod1<-aov(area~mid*type,data=atl_lat_all3)
+summary (mod1)
+
+mod2<-aov(area~mid+type,data=atl_lat_all3)
+summary (mod2)
+
+anova(mod1,mod2)
+
+AIC(mod1,mod2)
+pred<-predict(mod2)
+
+pred_lat_plot_atl<-ggplot(data=cbind(atl_lat_all3,pred),
+       aes(mid,area,color=type))+geom_point()+
+  facet_grid(.~type)+geom_line(aes(y=pred))
+pred_lat_plot_atl
+
+ggsave(filename="pred_lat_plot_atl.tiff",path="figs/")
+
+```
+mod1: area size is the dependent,  mid lat is the covariate, with type (1d vs 2d and 2d planar) as the factor. 
+Summary of the results show mid lat and type have significant effects on area, with interaction between two variables not significant.
+mod2: Summary of the results show mid lat and type have significant effects on area, with interaction between two variables not significant.
+
+comparing two models  anova, interaction of the variables is insignificant p=.6. area size will depend in a similar manner on mid latitude of species for any range construction type!
+
+last plot is of predicted values from model2
+
+plotting all lat on one plot for pac
+```{r}
+
+library(tidyverse)
+library(plotly)
+library(cowplot)
+library(sp)
+library(quantreg)
+
+attach(atl_ranges3)
+pac_subset<-subset(atl_ranges3,ocean=="pac")
+pac_lat_all<-pac_subset[ pac_subset$type %in% c("lat_range","lat_planar_range","lat_geog_range"),]
+
+#remove bounding points
+pac_lat_all<-subset(pac_lat_all,!(species=="bound"))
+
+#log the dependent variable:
+pac_lat_all3<-pac_lat_all %>% mutate(area=log10(area))
+
+write.csv(pac_lat_all3,"output/pac_lat_all3.csv")
+
+three_lat_trends_pac<-ggplot(data=pac_lat_all3,aes(mid,area,colour=type))+
+geom_point()+
+geom_smooth(se=F,method=loess)+
+#scale_y_continuous(trans='log2')+
+xlab("mid latitude (degrees latitude)")+
+ylab("range area (m/m2)")
+three_lat_trends_pac
+
+ggsave(filename="three_lat_trends_pac.tiff",path="figs/")
+
+mod1<-aov(area~mid*type,data=pac_lat_all3)
+summary (mod1)
+
+mod2<-aov(area~mid+type,data=pac_lat_all3)
+summary (mod2)
+
+anova(mod1,mod2)
+
+AIC(mod1,mod2)
+pred<-predict(mod2)
+
+pred_lat_plot_pac<-ggplot(data=cbind(pac_lat_all3,pred),
+       aes(mid,area,color=type))+geom_point()+
+  facet_grid(.~type)+geom_line(aes(y=pred))
+pred_lat_plot_pac
+
+ggsave(filename="pred_lat_plott_pac.tiff",path="figs/")
+
+```
+mod1: area size is the dependent,  mid lat is the covariate, with type (1d vs 2d and 2d planar) as the factor. 
+Summary of the results show mid lat does not have an effect on area but the area is dependent on the type (not suprising because the types have different dimensions of areas included. however comparing the models with anova, the interaction between area and type are not significant, with p value of .96, so area size will depend in a similar manner on mid latitude of species for any range construction type!
+
+last plot is of predicted values from model2
+
+
+plotting all long on one plot for pac
+```{r}
+
+library(tidyverse)
+library(plotly)
+library(cowplot)
+library(sp)
+library(quantreg)
+
+attach(atl_ranges3)
+pac_subset<-subset(atl_ranges3,ocean=="pac")
+pac_long_all<-pac_subset[ pac_subset$type %in% c("long_range","long_planar_range","long_geog_range"),]
+
+#remove bounding points
+pac_long_all<-subset(pac_long_all,!(species=="bound"))
+
+#log the dependent variable:
+pac_long_all3<-pac_long_all %>% mutate(area=log10(area))
+
+write.csv(pac_long_all3,"output/pac_long_all3.csv")
+
+three_long_trends_pac<-ggplot(data=pac_long_all3,aes(mid_long_adjust,area,colour=type))+
+geom_point()+
+geom_smooth(se=F,method=loess)+
+#scale_y_continuous(trans='log2')+
+xlab("mid longitude (degrees longitude)")+
+ylab("range area (m/m2)")
+three_long_trends_pac
+
+ggsave(filename="three_long_trends_pac.tiff",path="figs/")
+
+mod1<-aov(area~mid_long_adjust*type,data=pac_long_all3)
+summary (mod1)
+
+mod2<-aov(area~mid_long_adjust+type,data=pac_long_all3)
+summary (mod2)
+
+anova(mod1,mod2)
+
+AIC(mod1,mod2)
+pred<-predict(mod2)
+
+pred_long_plot_pac<-ggplot(data=cbind(pac_long_all3,pred),
+       aes(mid_long_adjust,area,color=type))+geom_point()+
+  facet_grid(.~type)+geom_line(aes(y=pred))
+pred_long_plot_pac
+
+ggsave(filename="pred_long_plott_pac.tiff",path="figs/")
+
+```
+mod1: area size is the dependent,  mid long is the covariate (used adjusted mid long value "mid_long_adjust" to account for degree shifts across meridian), with type (1d vs 2d and 2d planar) as the factor. 
+Summary of the results show mid lat does not have an effect on area but the area is dependent on the type (not suprising because the types have different dimensions of areas included. however comparing the models with anova, the interaction between area and type are not significant, with p value of .96, so area size will depend in a similar manner on mid latitude of species for any range construction type!
+
+last plot is of predicted values from model2
+
+plotting all long on one plot for atl
+```{r}
+
+library(tidyverse)
+library(plotly)
+library(cowplot)
+library(sp)
+library(quantreg)
+
+attach(atl_ranges3)
+atl_subset<-subset(atl_ranges3,ocean=="atl")
+atl_long_all<-atl_subset[ atl_subset$type %in% c("long_range","long_planar_range","long_geog_range"),]
+
+#remove bounding points
+atl_long_all<-subset(atl_long_all,!(species=="bound"))
+
+#log the dependent variable:
+atl_long_all3<-atl_long_all %>% mutate(area=log10(area))
+
+write.csv(atl_long_all3,"output/atl_long_all3.csv")
+
+three_long_trends_atl<-ggplot(data=atl_long_all3,aes(mid,area,colour=type))+
+geom_point()+
+geom_smooth(se=F,method=loess)+
+#scale_y_continuous(trans='log2')+
+xlab("mid longitude (degrees latitude)")+
+ylab("range area (m/m2)")
+three_long_trends_atl
+
+ggsave(filename="three_long_trends_atl.tiff",path="figs/")
+
+mod1<-aov(area~mid*type,data=atl_long_all3)
+summary (mod1)
+
+mod2<-aov(area~mid+type,data=atl_long_all3)
+summary (mod2)
+
+anova(mod1,mod2)
+
+AIC(mod1,mod2)
+pred<-predict(mod1)
+
+pred_long_plot_atl<-ggplot(data=cbind(atl_long_all3,pred),
+       aes(mid,area,color=type))+geom_point()+
+  facet_grid(.~type)+geom_line(aes(y=pred))
+pred_long_plot_atl
+
+ggsave(filename="pred_long_plot_atl.tiff",path="figs/")
+```
+mod1: area size is the dependent,  mid long is the covariate, with type (1d vs 2d and 2d planar) as the factor. 
+Summary of the results show mid lat and type have significant effects on area, with interaction between two variables not significant.
+mod2: Summary of the results show mid lat and type have significant effects on area, with interaction between two variables not significant.
+
+comparing two models  anova, interaction of the variables is insignificant p=.6. area size will depend in a similar manner on mid latitude of species for any range construction type! worth noting that the p value is clsoe to .05. seems type long extent is the most different trend out of the three. 
+
+last plot is of predicted values from model2
+
+plotting all depth on one plot for atl
+```{r}
+
+library(tidyverse)
+library(plotly)
+library(cowplot)
+library(sp)
+library(quantreg)
+
+attach(atl_ranges3)
+atl_subset<-subset(atl_ranges3,ocean=="atl")
+atl_depth_all<-atl_subset[ atl_subset$type %in% c("depth_range","depth_planar_range"),]
+
+#remove bounding points
+atl_depth_all<-subset(atl_depth_all,!(species=="bound"))
+
+#log the dependent variable:
+atl_depth_all3<-atl_depth_all %>% mutate(area=log10(area))
+
+write.csv(atl_depth_all3,"output/atl_depth_all3.csv")
+
+two_depth_trends_atl<-ggplot(data=atl_depth_all3,aes(mid,area,colour=type))+
+geom_point()+
+geom_smooth(se=F,method=loess)+
+#scale_y_continuous(trans='log2')+
+xlab("mid depth (m)")+
+ylab("range area (m/m2)")
+two_depth_trends_atl
+
+ggsave(filename="two_depth_trends_atl.tiff",path="figs/")
+
+mod1<-aov(area~mid*type,data=atl_depth_all3)
+summary (mod1)
+
+mod2<-aov(area~mid+type,data=atl_depth_all3)
+summary (mod2)
+
+anova(mod1,mod2)
+
+AIC(mod1,mod2)
+pred<-predict(mod2)
+
+pred_depth_plot_atl<-ggplot(data=cbind(atl_depth_all3,pred),
+       aes(mid,area,color=type))+geom_point()+
+  facet_grid(.~type)+geom_line(aes(y=pred))
+pred_depth_plot_atl
+
+ggsave(filename="pred_depth_plot_atl.tiff",path="figs/")
+
+```
+mod1: area size is the dependent,  mid depth is the covariate, with type (1d vs 2d and 2d planar) as the factor. 
+Summary of the results show mid depth and type have significant effects on area, with interaction between two variables not significant.
+mod2: Summary of the results show mid depth and type have significant effects on area, with interaction between two variables not significant.
+
+comparing two models  anova, interaction of the variables is insignificant p=.6. area size will depend in a similar manner on mid depth of species for any range construction type 
+
+last plot is of predicted values from model2
+
+
+plotting all depth on one plot for pac
+```{r}
+
+library(tidyverse)
+library(plotly)
+library(cowplot)
+library(sp)
+library(quantreg)
+
+attach(atl_ranges3)
+pac_subset<-subset(atl_ranges3,ocean=="pac")
+pac_depth_all<-pac_subset[ pac_subset$type %in% c("depth_range","depth_planar_range"),]
+
+#remove bounding points
+pac_depth_all<-subset(pac_depth_all,!(species=="bound"))
+
+#log the dependent variable:
+pac_depth_all3<-pac_depth_all %>% mutate(area=log10(area))
+
+write.csv(atl_depth_all3,"output/pac_depth_all3.csv")
+
+two_depth_trends_pac<-ggplot(data=pac_depth_all3,aes(mid,area,colour=type))+
+geom_point()+
+geom_smooth(se=F,method=loess)+
+#scale_y_continuous(trans='log2')+
+xlab("mid depth (m)")+
+ylab("range area (m/m2)")
+two_depth_trends_pac
+
+ggsave(filename="two_depth_trends_pac.tiff",path="figs/")
+
+mod1<-aov(area~mid*type,data=pac_depth_all3)
+summary (mod1)
+
+mod2<-aov(area~mid+type,data=pac_depth_all3)
+summary (mod2)
+
+anova(mod1,mod2)
+
+AIC(mod1,mod2)
+pred<-predict(mod2)
+
+pred_depth_plot_pac<-ggplot(data=cbind(pac_depth_all3,pred),
+       aes(mid,area,color=type))+geom_point()+
+  facet_grid(.~type)+geom_line(aes(y=pred))
+pred_depth_plot_pac
+
+ggsave(filename="pred_depth_plot_pac.tiff",path="figs/")
+
+```
+
+testing lat extent vs long extent vs depth extent per species
+```{r}
+attach(atl_magnitude)
+
+install.packages('scatterplot3d')
+library(scatterplot3d)
+install.packages('Rcmdr')
+library(Rcmdr)
+
+scatter3d(depth_extent,lat_extent,long_extent)
+
+```
+
+
+plotting all lat on one plot pac
+```{r}
+
+library(tidyverse)
+library(plotly)
+library(cowplot)
+library(sp)
+library(quantreg)
+
+  attach(atl_ranges3)
+ 
+pac_subset<-subset(atl_ranges3,ocean=="pac")
+pac_lat_all<-pac_subset[ pac_subset$type %in% c("lat_range","lat_planar_range","lat_geog_range"),]
+
+pac_lat_all<-subset(pac_lat_all,!(species=="bound"))
+
+ggplot(data=pac_lat_all,aes(mid,area,colour=type))+
+    geom_point()+
+      geom_smooth(se=F,method=loess)+
+  scale_y_continuous(trans='log2')
+  xlab("mid latitude (degrees latitude)")+
+  ylab("latitudinal extent (m)")
+
+
+```
+
+to plot pac mid lat vs lat extent
+```{r}  
+library(tidyverse)
+library(plotly)
+library(cowplot)
+library(sp)
+library(quantreg)
+
+  attach(atl_ranges3)
+  
+  atl_subset<-subset(atl_ranges3,ocean=="pac")
+  #atl_subset<-atl_subset %>% mutate(mid=mid+81)
+  atl_lat_range_subset<-subset(atl_subset,type=="lat_range")
+ # atl_lat_range_subset<-subset(atl_lat_range_subset,!(species=="bound"))
+
+ #atl_lat_range_subset<-atl_lat_range_subset %>% mutate(mid=mid+80)
+#  atl_lat_range_subset<-atl_lat_range_subset %>% mutate(area=area+5)
+
+  
+  pac_lat_plot<-ggplot(data=atl_lat_range_subset,aes(mid,area))+
+    geom_point()+
+      geom_smooth(data=subset(atl_lat_range_subset, atl_lat_range_subset$species!="bound"),method="auto",se=F)+
+    geom_point(color=ifelse(atl_lat_range_subset$species=="bound","red","black"))+
+# scale_y_continuous(trans='log2')+
+  scale_x_continuous(breaks=c(-80,-45,0,45,80))+
+      theme_classic()+
+  xlab("mid latitude (degrees latitude)")+
+  ylab("latitudinal extent (m)")
+
+    
+pac_lat_plot
+  ggsave(filename="pac_lat_plot.tiff",path="figs/")
+  
+```
+
+to plot atl mid lat vs geog extent
+```{r}
+library(tidyverse)
+library(plotly)
+library(cowplot)
+library(sp)
+library(quantreg)
+  
+  attach(atl_ranges3)
+  
+  atl_subset<-subset(atl_ranges3,ocean=="atl")
+  #atl_subset<-atl_subset %>% mutate(mid=mid+81)
+  atl_lat_geog_range_subset<-subset(atl_subset,type=="lat_geog_range")
+
+  
+ # atl_lat_geog_range_subset<-atl_lat_range_subset %>% mutate(mid=mid+5)
+ # atl_lat_range_subset<-atl_lat_range_subset %>% mutate(area=area+5)
+
+  
+  atl_lat_geog_plot<-ggplot(data=atl_lat_geog_range_subset,aes(mid,area))+
+    geom_point()+
+    geom_smooth(data=subset(atl_lat_geog_range_subset, atl_lat_geog_range_subset$species!="bound"),method="lm",se=F)+
+    geom_point(color=ifelse(atl_lat_geog_range_subset$species=="bound","red","black"))+
+ scale_y_continuous(trans='log2')+
+#scale_x_continuous(trans='log2')+
+    scale_x_continuous(breaks=c(0,45,80,125,180))+
+    theme_classic()+
+  xlab("mid latitude (degrees latitude)")+
+  ylab("geographic extent (m2)")
+    
+atl_lat_geog_plot
+  ggsave(filename="atl_lat_geog_plot.tiff",path="figs/")
+
+```
+same discussion as lat extent plot above. similar trends despite adding long dimension; however notably, most ranges did not extend to the largest possible ranges for their mid geog.it is more revealing than just observing lat extents as species lat extents are closer to max possible extents, but in terms of geog, they fall short, revealing more realistic range extents.
+
+
+to plot pac mid lat vs geog extent
+```{r}
+library(tidyverse)
+library(plotly)
+library(cowplot)
+library(sp)
+library(quantreg)
+install.packages("ggfortify")
+library(ggfortify)
+install.packages("emmeans")
+library(emmeans)
+install.packages("ggeffects")
+library(ggeffects)
+  
+
+  attach(atl_ranges3)
+  
+  atl_subset<-subset(atl_ranges3,ocean=="pac")
+  #atl_subset<-atl_subset %>% mutate(mid=mid+81)
+  atl_lat_geog_range_subset<-subset(atl_subset,type=="lat_geog_range")
+  atl_lat_geog_range_subset2<-subset(atl_lat_geog_range_subset,atl_lat_geog_range_subset$species!="bound")
+
+  
+ # atl_lat_geog_range_subset<-atl_lat_range_subset %>% mutate(mid=mid+5)
+ # atl_lat_range_subset<-atl_lat_range_subset %>% mutate(area=area+5)
+
+  
+  pac_lat_geog_plot<-ggplot(data=atl_lat_geog_range_subset,aes(mid,area))+
+    geom_point()+
+    geom_smooth(data=subset(atl_lat_geog_range_subset, atl_lat_geog_range_subset$species!="bound"),method="auto",se=F)+
+    geom_point(color=ifelse(atl_lat_geog_range_subset$species=="bound","red","black"))+
+ scale_y_continuous(trans='log2')+
+#scale_x_continuous(trans='log2')+
+    scale_x_continuous(breaks=c(0,45,80,125,180))+
+    theme_classic()+
+  xlab("mid latitude (degrees latitude)")+
+  ylab("geographic extent (m2)")
+    
+pac_lat_geog_plot
+
+  ggsave(filename="pac_lat_geog_plot.tiff",path="figs/")
+  
+  pac_lat_geog_range_subset2.lm<-lm(area~mid,atl_lat_geog_range_subset2)
+  autoplot(pac_lat_geog_range_subset2.lm,which=1:6)
+  
+  summary(pac_lat_geog_range_subset2.lm)
+  
+  ggemmeans(pac_lat_geog_range_subset2.lm,~mid) %>% plot
+  
+  ggplot(pac_lat_geog_range_subset2.lm)
+
+```
+
+
+to plot atl mid lat vs planar extent
+
+```{r}
+library(tidyverse)
+library(plotly)
+library(cowplot)
+library(sp)
+library(quantreg)
+  
+  attach(atl_ranges3)
+  
+  atl_subset<-subset(atl_ranges3,ocean=="atl")
+  #atl_subset<-atl_subset %>% mutate(mid=mid+81)
+  atl_lat_planar_subset<-subset(atl_subset,type=="lat_planar_range")
+
+  
+  #atl_lat_planar_range_subset<-atl_lat_planar_range_subset %>% mutate(mid=mid+5)
+ # atl_lat_range_subset<-atl_lat_range_subset %>% mutate(area=area+5)
+
+  
+  atl_lat_planar_plot<-ggplot(data=atl_lat_planar_subset,aes(mid,area))+
+    geom_point()+
+    geom_smooth(data=subset(atl_lat_planar_subset, atl_lat_planar_subset$species!="bound"),method="lm",se=F)+
+    geom_point(color=ifelse(atl_lat_planar_subset$species=="bound","red","black"))+
+ scale_y_continuous(trans='log2')+
+    scale_x_continuous(breaks=c(0,45,80,125,160))+
+    theme_classic()+
+  xlab("mid latitude (degrees latitude)")+
+  ylab("planar extent (m2)")
+    
+atl_lat_planar_plot
+  ggsave(filename="atl_lat_planar_plot.tiff",path="figs/")
+
+```
+
+same trend as previous two despite adding final dimension. the reason why the pattern does not change between geog and planar is because the geographic extent is much larger than the bathymetric extent. therefore adding the depth dimension for ranges that occur across the entire ocean is insignificant. for this reason, range sizes tent to simply double from geographic to planar range extents.thereofre, understanding how range sizes change over large geographic ranges does not require consideration of depth unless you are attempting to use that data to infer species richness in multiple dimensions, where despite the smaller relative size depth is to geography, you will observe differences in richness along depth gradient as species can overlap geographically but be bathymetrically separated.
+
+
+to plot pac mid lat vs planar extent
+
+```{r}
+library(tidyverse)
+library(plotly)
+library(cowplot)
+library(sp)
+library(quantreg)
+  
+  attach(atl_ranges3)
+  
+  atl_subset<-subset(atl_ranges3,ocean=="pac")
+  #atl_subset<-atl_subset %>% mutate(mid=mid+81)
+  atl_lat_planar_subset<-subset(atl_subset,type=="lat_planar_range")
+
+  
+  #atl_lat_planar_range_subset<-atl_lat_planar_range_subset %>% mutate(mid=mid+5)
+ # atl_lat_range_subset<-atl_lat_range_subset %>% mutate(area=area+5)
+
+  
+  pac_lat_planar_plot<-ggplot(data=atl_lat_planar_subset,aes(mid,area))+
+    geom_point()+
+    geom_smooth(data=subset(atl_lat_planar_subset, atl_lat_planar_subset$species!="bound"),method="loess",scale=.9,se=F)+
+    geom_point(color=ifelse(atl_lat_planar_subset$species=="bound","red","black"))+
+ scale_y_continuous(trans='log2')+
+    scale_x_continuous(breaks=c(0,45,80,125,160))+
+    theme_classic()+
+  xlab("mid latitude (degrees latitude)")+
+  ylab("planar extent (m2)")
+    
+pac_lat_planar_plot
+  ggsave(filename="pac_lat_planar_plot.tiff",path="figs/")
+
+```
+
+
+to plot atl mid long vs long extent
+```{r}
+library(tidyverse)
+library(plotly)
+library(cowplot)
+library(sp)
+library(quantreg)
+  
+  attach(atl_ranges3)
+  
+  atl_subset<-subset(atl_ranges3,ocean=="atl")
+  #atl_subset<-atl_subset %>% mutate(mid=mid+80)
+  #atl_subset<-atl_subset %>% mutate(area=area+5)
+  atl_long_range_subset<-subset(atl_subset,type=="long_range")
+
+  
+  atl_long_plot<-ggplot(data=atl_long_range_subset,aes(mid,area))+
+    geom_point()+
+    geom_smooth(data=subset(atl_long_range_subset, atl_long_range_subset$species!="bound"),method="auto",se=F)+
+    geom_point(color=ifelse(atl_long_range_subset$species=="bound","red","black"))+
+  #scale_y_continuous(trans='log2')+
+  #scale_x_continuous(trans='log2')+
+      theme_classic()+
+  xlab("mid longitude (decimal degrees)")+
+  ylab("longitude extent (m)")
+    
+atl_long_plot
+  ggsave(filename="atl_long_plot.tiff",path="figs/")
+
+```
+longitude ranges relate to bounds where species in the middle of the atlantic ocean have the largest longitude extents (must be deep species).
+
+
+
+to plot pac mid long vs long extent
+```{r}
+library(tidyverse)
+library(plotly)
+library(cowplot)
+library(sp)
+library(quantreg)
+  
+  attach(atl_ranges3)
+  
+  atl_subset<-subset(atl_ranges3,ocean=="pac")
+  #atl_subset<-atl_subset %>% mutate(mid=mid+80)
+  #atl_subset<-atl_subset %>% mutate(area=area+5)
+  atl_long_range_subset<-subset(atl_subset,type=="long_range")
+
+  
+  pac_long_plot<-ggplot(data=atl_long_range_subset,aes(mid_long_adjust,area))+
+    geom_point()+
+    geom_smooth(data=subset(atl_long_range_subset, atl_long_range_subset$species!="bound"),method="loess",span=.9,se=F)+
+    geom_point(color=ifelse(atl_long_range_subset$species=="bound","red","black"))+
+  #scale_y_continuous(trans='log2')+
+  #scale_x_continuous(trans='log2')+
+      theme_classic()+
+  xlab("mid longitude (decimal degrees)")+
+  ylab("longitude extent (m)")
+    
+pac_long_plot
+  ggsave(filename="pac_long_plot.tiff",path="figs/")
+
+```
+
+
+to plot atl mid long vs geog extent
+```{r}
+library(tidyverse)
+library(plotly)
+library(cowplot)
+library(sp)
+library(quantreg)
+  
+  attach(atl_ranges3)
+  
+  atl_subset<-subset(atl_ranges3,ocean=="atl")
+  #atl_subset<-atl_subset %>% mutate(mid=mid+80)
+  #atl_subset<-atl_subset %>% mutate(area=area+5)
+  atl_long_geog_range_subset<-subset(atl_subset,type=="long_geog_range")
+
+  
+  atl_long_geog_plot<-ggplot(data=atl_long_geog_range_subset,aes(mid,area))+
+    geom_point()+
+    geom_smooth(data=subset(atl_long_geog_range_subset, atl_long_geog_range_subset$species!="bound"),method="auto",se=F)+
+    geom_point(color=ifelse(atl_long_geog_range_subset$species=="bound","red","black"))+
+ scale_y_continuous(trans='log2')+
+#scale_x_continuous(trans='log2')+
+      theme_classic()+
+  xlab("mid longitude (decimal degrees)")+
+  ylab("geographic extent (m2)")
+    
+atl_long_geog_plot
+  ggsave(filename="atl_long_geog_plot.tiff",path="figs/")
+
+```
+similar to geographic extent of latitude, a weaker relationship between the trend and the boundary of the ocean and much lower ranges compared to the size they potentially can reach.
+
+to plot pac mid long vs geog extent
+```{r}
+library(tidyverse)
+library(plotly)
+library(cowplot)
+library(sp)
+library(quantreg)
+  
+  attach(atl_ranges3)
+  
+  atl_subset<-subset(atl_ranges3,ocean=="pac")
+  #atl_subset<-atl_subset %>% mutate(mid=mid+80)
+  #atl_subset<-atl_subset %>% mutate(area=area+5)
+  atl_long_geog_range_subset<-subset(atl_subset,type=="long_geog_range")
+
+  
+  pac_long_geog_plot<-ggplot(data=atl_long_geog_range_subset,aes(mid_long_adjust,area))+
+    geom_point()+
+    geom_smooth(data=subset(atl_long_geog_range_subset, atl_long_geog_range_subset$species!="bound"),method="loess",span=.9,se=F)+
+    geom_point(color=ifelse(atl_long_geog_range_subset$species=="bound","red","black"))+
+ scale_y_continuous(trans='log2')+
+#scale_x_continuous(trans='log2')+
+      theme_classic()+
+  xlab("mid longitude (decimal degrees)")+
+  ylab("geographic extent (m2)")
+    
+pac_long_geog_plot
+  ggsave(filename="pac_long_geog_plot.tiff",path="figs/")
+
+```
+
+
+
+to plot atl mid long vs planar extent
+```{r}
+
+library(tidyverse)
+library(plotly)
+library(cowplot)
+library(sp)
+library(quantreg)
+  
+  attach(atl_ranges3)
+  
+  atl_subset<-subset(atl_ranges3,ocean=="atl")
+  #atl_subset<-atl_subset %>% mutate(mid=mid+80)
+  #atl_subset<-atl_subset %>% mutate(area=area+5)
+  atl_long_planar_range_subset<-subset(atl_subset,type=="long_planar_range")
+
+  
+  atl_long_planar_plot<-ggplot(data=atl_long_planar_range_subset,aes(mid,area))+
+    geom_point()+
+    geom_smooth(data=subset(atl_long_planar_range_subset, atl_long_planar_range_subset$species!="bound"),method="auto",se=F)+
+    geom_point(color=ifelse(atl_long_planar_range_subset$species=="bound","red","black"))+
+ scale_y_continuous(trans='log2')+
+  #scale_x_continuous(trans='log2')+
+      theme_classic()+
+  xlab("mid longitude (decimal degrees)")+
+  ylab("planar extent (m2)")
+    
+atl_long_planar_plot
+  ggsave(filename="atl_long_planar_plot.tiff",path="figs/")
+
+```
+similar to geog
+
+to plot pac mid long vs planar extent
+```{r}
+
+library(tidyverse)
+library(plotly)
+library(cowplot)
+library(sp)
+library(quantreg)
+  
+  attach(atl_ranges3)
+  
+  atl_subset<-subset(atl_ranges3,ocean=="pac")
+  #atl_subset<-atl_subset %>% mutate(mid=mid+80)
+  #atl_subset<-atl_subset %>% mutate(area=area+5)
+  atl_long_planar_range_subset<-subset(atl_subset,type=="long_planar_range")
+
+  
+  pac_long_planar_plot<-ggplot(data=atl_long_planar_range_subset,aes(mid_long_adjust,area))+
+    geom_point()+
+    geom_smooth(data=subset(atl_long_planar_range_subset, atl_long_planar_range_subset$species!="bound"),method="auto",se=F)+
+    geom_point(color=ifelse(atl_long_planar_range_subset$species=="bound","red","black"))+
+ scale_y_continuous(trans='log2')+
+  #scale_x_continuous(trans='log2')+
+      theme_classic()+
+  xlab("mid longitude (decimal degrees)")+
+  ylab("planar extent (m2)")
+    
+pac_long_planar_plot
+  ggsave(filename="pac_long_planar_plot.tiff",path="figs/")
+
+```
+
+to plot atl mid depth vs depth extent
+```{r}
+  
+library(tidyverse)
+library(plotly)
+library(cowplot)
+library(sp)
+library(quantreg)
+  
+  attach(atl_ranges3)
+  
+  atl_subset<-subset(atl_ranges3,ocean=="atl")
+ #atl_subset<-atl_subset %>% mutate(mid=mid+1)
+ #atl_subset<-atl_subset %>% mutate(area=area+5)
+  atl_depth_range_subset<-subset(atl_subset,type=="depth_range")
+
+  
+  atl_depth_plot<-ggplot(data=atl_depth_range_subset,aes(mid,area))+
+    geom_point()+
+    geom_smooth(data=subset(atl_depth_range_subset, atl_depth_range_subset$species!="bound"),method="auto",se=F)+
+    geom_point(color=ifelse(atl_depth_range_subset$species=="bound","red","black"))+
+ scale_y_continuous(trans='log2')+
+scale_x_continuous(trans='log2')+
+      theme_classic()+
+  xlab("mid depth (m)")+
+  ylab("depth extent (m)")
+    
+atl_depth_plot
+  ggsave(filename="atl_depth_plot.tiff",path="figs/")
+
+```
+species depth extents follow the vertical boundaries of the ocean and the relationship between mid depth and depth extent is strong
+
+
+to plot pac mid depth vs depth extent
+```{r}
+  
+library(tidyverse)
+library(plotly)
+library(cowplot)
+library(sp)
+library(quantreg)
+  
+  attach(atl_ranges3)
+  
+  atl_subset<-subset(atl_ranges3,ocean=="pac")
+ #atl_subset<-atl_subset %>% mutate(mid=mid+1)
+ #atl_subset<-atl_subset %>% mutate(area=area+5)
+  atl_depth_range_subset<-subset(atl_subset,type=="depth_range")
+
+  
+  pac_depth_plot<-ggplot(data=atl_depth_range_subset,aes(mid,area))+
+    geom_point()+
+    geom_smooth(data=subset(atl_depth_range_subset, atl_depth_range_subset$species!="bound"),method="auto",se=F)+
+    geom_point(color=ifelse(atl_depth_range_subset$species=="bound","red","black"))+
+ scale_y_continuous(trans='log2')+
+scale_x_continuous(trans='log2')+
+      theme_classic()+
+  xlab("mid depth (m)")+
+  ylab("depth extent (m)")
+    
+pac_depth_plot
+  ggsave(filename="pac_depth_plot.tiff",path="figs/")
+
+```
+
+
+
+to plot atl mid depth vs planar extent
+```{r}
+
+library(tidyverse)
+library(plotly)
+library(cowplot)
+library(sp)
+library(quantreg)
+  
+  attach(atl_ranges3)
+  
+  atl_subset<-subset(atl_ranges3,ocean=="atl")
+ # atl_subset<-atl_subset %>% mutate(mid=mid+5)
+  #atl_subset<-atl_subset %>% mutate(area=area+5)
+  atl_depth_planar_range_subset<-subset(atl_subset,type=="depth_planar_range")
+  #atl_depth_planar_range_subset<-subset(atl_depth_planar_range_subset,atl_depth_planar_range_subset$species!="bound")
+  
+  atl_depth_planar_plot<-ggplot(data=atl_depth_planar_range_subset,aes(mid,area))+
+    geom_point()+
+    geom_smooth(data=subset(atl_depth_planar_range_subset, atl_depth_planar_range_subset$species!="bound"),method="auto",se=F)+
+    geom_point(color=ifelse(atl_depth_planar_range_subset$species=="bound","red","black"))+
+  scale_y_continuous(trans='log2')+
+scale_x_continuous(trans='log2',breaks=c(128,512,2048,8192))+
+      theme_classic()+
+  xlab("mid depth (m)")+
+  ylab("planar extent (m)")
+    
+atl_depth_planar_plot
+  ggsave(filename="atl_depth_planar_plot.tiff",path="figs/")
+
+```
+
+planar range extents do not extend to bounds of ocean. we have a less significant relationship between mid depth and planar extent. lastly, studies stress that range size increases with depth. that is true until the mid depth of the species = the deepest depth of the ocean basin. beyond that depth, range sizes become smaller. likely explantion for why this hasnt been formally stated is because we lack survey effort in deep and finding deep species with small ranges is even harder!
+
+
+to plot pac mid depth vs planar extent
+```{r}
+
+library(tidyverse)
+library(plotly)
+library(cowplot)
+library(sp)
+library(quantreg)
+  
+  attach(atl_ranges3)
+  
+  atl_subset<-subset(atl_ranges3,ocean=="pac")
+ # atl_subset<-atl_subset %>% mutate(mid=mid+5)
+  #atl_subset<-atl_subset %>% mutate(area=area+5)
+  atl_depth_planar_range_subset<-subset(atl_subset,type=="depth_planar_range")
+  #atl_depth_planar_range_subset<-subset(atl_depth_planar_range_subset,atl_depth_planar_range_subset$species!="bound")
+  
+  pac_depth_planar_plot<-ggplot(data=atl_depth_planar_range_subset,aes(mid,area))+
+    geom_point()+
+    geom_smooth(data=subset(atl_depth_planar_range_subset, atl_depth_planar_range_subset$species!="bound"),method="auto",se=F)+
+    geom_point(color=ifelse(atl_depth_planar_range_subset$species=="bound","red","black"))+
+  scale_y_continuous(trans='log2')+
+scale_x_continuous(trans='log2',breaks=c(128,512,2048,8192))+
+      theme_classic()+
+  xlab("mid depth (m)")+
+  ylab("planar extent (m)")
+    
+pac_depth_planar_plot
+  ggsave(filename="pac_depth_planar_plot.tiff",path="figs/")
+
+```
+max planar extent in shallow results from pure lat long extent being large. however, most species do not cross the middle of oceans or along entire coast edges. one notable species is A grandis, but dna is required to confirm.
+
+6. run this to analyze richness with depth
+6a. Atlantic Ocean
+
+
+```{r}
+
+attach(all_ready3)
+
+#subset atlantic from 2d richness dataset
+atl_rich_2d<-subset(all_ready3,ocean=="atlantic")
+
+#subset 1d 
+data <- subset(atl_merge4, select = c('species1','min_depth','max_depth'))
+
+atl_rich_1d <- data.frame(depth=as.numeric(),richness=as.numeric())
+
+for (i in 1:5467) {
+  ccc <- vector()  
+  for (k in 1:nrow(data)){
+    a<- if (i>=data$min_depth[k] & i<=data$max_depth[k]) {1} else {0}
+    ccc <- c(ccc,a)
+    
+    
+  }
+  atl_rich_1d[i,1] <- i
+  atl_rich_1d[i,2] <- sum(ccc)
+}
+
+species_ranges3<-data.frame(depth=integer(),max_rich=integer(),stringsAsFactors = F)
+
+species_sorted3<- atl_rich_2d[order(atl_rich_2d$depth),]
+
+for (i in 1:length(unique(species_sorted3$depth))) {
+  species_ranges3[i,1] <- as.numeric(unique(species_sorted3$depth)[i])#depth value
+  species_ranges3[i,2] <- as.numeric(max(species_sorted3[which(species_sorted3$depth == species_ranges3[i,1]),]$richness))
+}
+
+names(atl_rich_1d)[names(atl_rich_1d)=='richness']<-'richness1d'
+names(species_ranges3)[names(species_ranges3)=='max_rich']<-'richness2d'
+
+atl_depth_rich<-merge(atl_rich_1d,species_ranges3,by="depth")
+
+#to save output
+write.csv(atl_depth_rich,"output/atl_depth_rich.csv")
+
+
+```
+
+6. run this to analyze richness with depth
+6b. Indian Ocean
+
+```{r}
+
+#attach(all_ready3)
+
+#subset atlantic from 2d richness dataset
+#ind_rich_2d<-subset(all_ready3,ocean=="indian")
+
+#reran richness analyses with just four species. this is the dataset with 2d and 1d geog rich:
+attach(ind_2d_1d_merge)
+
+#subset 1d 
+data <- subset(ind_merge4, select = c('species1','min_depth','max_depth'))
+
+ind_rich_1d <- data.frame(depth=as.numeric(),richness=as.numeric())
+
+for (i in 1:5336) {
+  ccc <- vector()  
+  for (k in 1:nrow(data)){
+    a<- if (i>=data$min_depth[k] & i<=data$max_depth[k]) {1} else {0}
+    ccc <- c(ccc,a)
+    
+    
+  }
+  ind_rich_1d[i,1] <- i
+  ind_rich_1d[i,2] <- sum(ccc)
+}
+
+#for geog
+species_ranges3_geog<-data.frame(depth=integer(),max_rich=integer(),stringsAsFactors = F)
+
+species_sorted3<- ind_2d_1d_merge[order(ind_2d_1d_merge$depth.y),]
+
+for (i in 1:length(unique(species_sorted3$depth.y))) {
+  species_ranges3_geog[i,1] <- as.numeric(unique(species_sorted3$depth.y)[i])#depth value
+  species_ranges3_geog[i,2] <- as.numeric(max(species_sorted3[which(species_sorted3$depth.y == species_ranges3_geog[i,1]),]$rich_1d_geog))
+}
+
+#for 2d
+species_ranges3_2d<-data.frame(depth=integer(),max_rich=integer(),stringsAsFactors = F)
+
+species_sorted3<- ind_2d_1d_merge[order(ind_2d_1d_merge$depth.y),]
+
+for (i in 1:length(unique(species_sorted3$depth.y))) {
+  species_ranges3_2d[i,1] <- as.numeric(unique(species_sorted3$depth.y)[i])#depth value
+  species_ranges3_2d[i,2] <- as.numeric(max(species_sorted3[which(species_sorted3$depth.y == species_ranges3_2d[i,1]),]$rich_2d))
+}
+
+
+names(ind_rich_1d)[names(ind_rich_1d)=='richness']<-'richness1d'
+names(species_ranges3_2d)[names(species_ranges3_2d)=='max_rich']<-'richness2d'
+
+ind_depth_rich<-merge(ind_rich_1d,species_ranges3_2d,by="depth")
+
+#to save output
+write.csv(ind_depth_rich,"output/ind_depth_rich.csv")
+
+```
+
+6. run this to analyze richness with depth
+6c. Pacific Ocean
+
+```{r}
+
+attach(all_ready3)
+
+#subset atlantic from 2d richness dataset
+#pac_rich_2d<-subset(all_ready3,ocean=="pacific")
+#need to redo 2d rich for lat and depth... doing it below
+
+attach(pac_left_unsuited1)
+attach(pac_right_unsuited1)
+names(pac_left_unsuited1)[names(pac_left_unsuited1)=='species']<-'species1'
+names(pac_right_unsuited1)[names(pac_right_unsuited1)=='species']<-'species1'
+
+pac_left_unsuit1_minmax<-merge(pac_left_unsuited1,pac_merge4,by='species1',all=T)
+pac_right_unsuit1_minmax<-merge(pac_right_unsuited1,pac_merge4,by='species1',all=T)
+
+#now that min and max depth has been added to the gis database (raw unsuited rich, not yet pivoted), export it and work in excel
+write.csv(pac_left_unsuit1_minmax,"data/pac_left_unsuit1_minmax.csv")
+write.csv(pac_right_unsuit1_minmax,"data/pac_right_unsuit1_minmax.csv")
+
+#calculated richness per fid, now need to add lat long depth to that data
+attach(pac_fid_rich_need_xyd)
+attach(pac_xyd_fid_need_rich)
+
+pac_rich_merge<-merge(pac_fid_rich_need_xyd,pac_xyd_fid_need_rich,by='TARGET_FID')
+write.csv(pac_rich_merge,"data/pac_rich_merge.csv")
+
+#pac_rich_merge looks good, deleted species name and renamed it pac_rich_merge_2
+attach(pac_rich_merge2)
+
+#subset 1d 
+data <- subset(pac_merge4, select = c('species1','min_depth','max_depth'))
+
+pac_rich_1d <- data.frame(depth=as.numeric(),richness=as.numeric())
+
+for (i in 1:5467) {
+  ccc <- vector()  
+  for (k in 1:nrow(data)){
+    a<- if (i>=data$min_depth[k] & i<=data$max_depth[k]) {1} else {0}
+    ccc <- c(ccc,a)
+    
+    
+  }
+  pac_rich_1d[i,1] <- i
+  pac_rich_1d[i,2] <- sum(ccc)
+}
+
+species_ranges3<-data.frame(depth=integer(),max_rich=integer(),stringsAsFactors = F)
+
+species_sorted3<- pac_rich_merge2[order(pac_rich_merge2$depth),]
+
+for (i in 1:length(unique(species_sorted3$depth))) {
+  species_ranges3[i,1] <- as.numeric(unique(species_sorted3$depth)[i])#depth value
+  species_ranges3[i,2] <- as.numeric(max(species_sorted3[which(species_sorted3$depth == species_ranges3[i,1]),]$richness))
+}
+
+names(pac_rich_1d)[names(pac_rich_1d)=='richness']<-'richness1d'
+names(species_ranges3)[names(species_ranges3)=='max_rich']<-'richness2d'
+
+pac_depth_rich<-merge(pac_rich_1d,species_ranges3,by="depth")
+
+#to save output
+write.csv(pac_depth_rich,"output/pac_depth_rich.csv")
+
+
+#retesting 2d depth richness
+attach(pac_2d_depth_ready)
+
+pac_2d_depth_ready<-round(pac_2d_depth_ready,0)
+
+species_ranges6<-data.frame(depth=integer(),max_rich=integer(),stringsAsFactors = F)
+
+species_sorted6<- pac_2d_depth_ready[order(pac_2d_depth_ready$depth),]
+
+for (i in 1:length(unique(species_sorted6$depth))) {
+  species_ranges6[i,1] <- as.numeric(unique(species_sorted6$depth)[i])#depth value
+  species_ranges6[i,2] <- as.numeric(max(species_sorted6[which(species_sorted6$depth == species_ranges6[i,1]),]$richness))
+}
+
+names(species_ranges6)[names(species_ranges6)=='max_rich']<-'richness2d'
+pac_depth_rich_test<-merge(pac_rich_1d,species_ranges6,by="depth")
+
+
+```
+
+
+7. plot richness with depth
+7a. Atlantic Ocean
+
+```{r}
+attach(atl_depth_rich)
+
+install.packages("reshape2")
+library(reshape2)
+
+#ggplot(atl_depth_rich3,aes(depth,rich))+
+#geom_line(aes(y=type$richness2d,color="2d"),size=1)+ 
+#geom_line(aes(y=type$richness1d,color="1d"),size=1)+
+#xlab(label="Depth (m)")+
+#ylab("Richness")+
+#theme_classic()
+
+#to convert dataset from wide to long:
+atl_depth_rich2<- melt(atl_depth_rich, id.vars=c("X1","depth"))
+atl_depth_rich2
+
+#to save output
+write.csv(atl_depth_rich2,"output/atl_depth_rich2.csv")
+
+#in excel, changed names of columns for atl_depth_rich3
+
+atl_depth_rich3plot<-ggplot(data=atl_depth_rich3,aes(depth,rich,colour=type))+
+geom_line()+
+#geom_smooth(se=F,method=loess)+
+xlab(label="Depth (m)")+
+ylab("Richness")+
+theme_classic()
+atl_depth_rich3plot
+
+#to save figure
+ggsave(filename="atl_depth_rich3plot.tiff",path="figs/")
+
+
+mod1<-aov(rich~depth*type,data=atl_depth_rich3)
+summary (mod1)
+
+mod2<-aov(rich~depth+type,data=atl_depth_rich3)
+summary (mod2)
+
+anova(mod1,mod2)
+
+AIC(mod1,mod2)
+pred<-predict(mod2)
+
+pred_atl_depth_rich3plot<-ggplot(data=cbind(atl_depth_rich3,pred),
+       aes(depth,rich,color=type))+geom_point()+
+  facet_grid(.~type)+geom_line(aes(y=pred))
+pred_atl_depth_rich3plot
+
+ggsave(filename="pred_atl_depth_rich3plot.tiff",path="figs/")
+
+
+```
+
+
+7. plot richness with depth
+7c. Pacific Ocean
+
+```{r}
+ggplot(pac_depth_rich,aes(depth))+
+geom_line(aes(y=richness2d,color="2d"),size=1)+ 
+geom_line(aes(y=richness1d,color="1d"),size=1)+
+xlab(label="Depth (m)")+
+ylab("Richness")+
+theme_classic()
+
+#to save figure 
+ggsave(filename="pac_depth_rich.tiff",path="figs/")
+
+
+
+```
+
+
+8. run this to analyze richness with latitude
+8a. Atlantic Ocean
+
+```{r}
+
+attach(atl_richness_1)
+attach(atl_richness_raw)
+
+#1d geographic richness
+atl_lat_1_d_merge<-merge(atl_richness_1,atl_richness_raw,by="target_fid")
+
+#1d lat extent for atl
+atl_lat_rich<-atl_lat_1_d_merge %>%
+  group_by(y.y) %>%
+  summarise(n_distinct(species))
+
+names(atl_lat_rich)[names(atl_lat_rich)=='n_distinct(species)']<-'richness'
+
+
+atl_lat_rich<-round(atl_lat_rich,2)
+
+p1<-ggplot(atl_lat_rich,aes(y.y,richness))+
+  geom_point(size=3)+
+  ylim(0,60)+
+  labs(x ="latitude",y="1d latitude extent richness")
+
+
+
+#to pull out max rich per lat value for p2
+#create empty dataframe to insert max  richness per lat
+species_ranges<-data.frame(y.y=integer(),max_rich=integer(),stringsAsFactors = F)
+
+#to sort data by lat
+species_sorted<- atl_lat_1_d_merge[order(atl_lat_1_d_merge$y.y),]
+
+species_sorted[is.na(species_sorted)] <- 0
+
+#for loop: go through maxi and pull out the max richness for each lat 
+for (i in 1:length(unique(species_sorted$y.y))) {
+  species_ranges[i,1] <- as.numeric(unique(species_sorted$y.y)[i])#lat value
+  species_ranges[i,2] <- as.numeric(max(species_sorted[which(species_sorted$y.y == species_ranges[i,1]),]$richness))
+}
+
+species_ranges<-round(species_ranges,2)
+
+p2<-ggplot(atl_lat_1_d_merge,aes(y.y,richness))+
+  geom_point()+
+  ylim(0,60)+
+  labs(x ="latitude",y="1d geographic extent richness")
+  
+
+#to pull out max rich per lat value for p3
+#create empty dataframe to insert max  richness per lat
+species_ranges2<-data.frame(y.y=integer(),max_rich=integer(),stringsAsFactors = F)
+
+#to sort data by lat
+species_sorted2<- atl_rich_2d[order(atl_rich_2d$y_exact),]
+
+#for loop: go through maxi and pull out the max richness for each lat 
+for (i in 1:length(unique(species_sorted2$y_exact))) {
+  species_ranges2[i,1] <- as.numeric(unique(species_sorted2$y_exact)[i])#lat value
+  species_ranges2[i,2] <- as.numeric(max(species_sorted2[which(species_sorted2$y_exact == species_ranges2[i,1]),]$richness))
+}
+
+p3<-ggplot(atl_rich_3d,aes(y_exact,richness))+
+  geom_point(size=3)+
+  ylim(0,60)+
+  labs(x ="latitude",y="2d planar range extent richness")
+
+
+names(atl_lat_rich)[names(atl_lat_rich)=='richness']<-'rich_lat'
+names(species_ranges)[names(species_ranges)=='max_rich']<-'rich_geog'
+names(species_ranges2)[names(species_ranges2)=='max_rich']<-'rich_2d'
+
+names(atl_lat_rich)[names(atl_lat_rich)=='y.y']<-'lat'
+names(species_ranges)[names(species_ranges)=='y.y']<-'lat'
+names(species_ranges2)[names(species_ranges2)=='y.y']<-'lat'
+
+atl_lat_rich_combine<-merge(atl_lat_rich,species_ranges,by="lat")
+
+atl_lat_rich_combine2<-merge(atl_lat_rich_combine,species_ranges2,by='lat')
+
+#to save output
+write.csv(atl_lat_rich_combine2,"output/atl_lat_rich_combine2.csv")
+
+```
+
+
+8. run this to analyze richness with long!!!
+8a. Atlantic Ocean
+
+```{r}
+
+attach(atl_richness_1)
+attach(atl_richness_raw)
+
+#1d geographic richness
+atl_lat_1_d_merge<-merge(atl_richness_1,atl_richness_raw,by="target_fid")
+
+#1d lat extent for atl
+atl_lat_rich<-atl_lat_1_d_merge %>%
+  group_by(x.y) %>%
+  summarise(n_distinct(species))
+
+names(atl_lat_rich)[names(atl_lat_rich)=='n_distinct(species)']<-'richness'
+
+
+atl_lat_rich<-round(atl_lat_rich,2)
+
+p1<-ggplot(atl_lat_rich,aes(x.y,richness))+
+  geom_point(size=3)+
+  ylim(0,60)+
+  labs(x ="latitude",y="1d long extent richness")
+
+
+
+#to pull out max rich per lat value for p2
+#create empty dataframe to insert max  richness per lat
+species_ranges<-data.frame(x.y=integer(),max_rich=integer(),stringsAsFactors = F)
+
+#to sort data by long
+species_sorted<- atl_lat_1_d_merge[order(atl_lat_1_d_merge$x.y),]
+
+species_sorted[is.na(species_sorted)] <- 0
+
+#for loop: go through maxi and pull out the max richness for each lat 
+for (i in 1:length(unique(species_sorted$x.y))) {
+  species_ranges[i,1] <- as.numeric(unique(species_sorted$x.y)[i])#long value
+  species_ranges[i,2] <- as.numeric(max(species_sorted[which(species_sorted$x.y == species_ranges[i,1]),]$richness))
+}
+
+species_ranges<-round(species_ranges,2)
+
+p2<-ggplot(species_ranges,aes(x.y,max_rich))+
+  geom_point()+
+  ylim(0,60)+
+  labs(x ="long",y="1d geographic extent richness")
+  
+
+#to pull out max rich per lat value for p3
+#create empty dataframe to insert max  richness per lat
+species_ranges2<-data.frame(x.y=integer(),max_rich=integer(),stringsAsFactors = F)
+
+#to sort data by long
+species_sorted2<- atl_rich_2d[order(atl_rich_2d$x_exact),]
+
+#for loop: go through maxi and pull out the max richness for each lat 
+for (i in 1:length(unique(species_sorted2$x_exact))) {
+  species_ranges2[i,1] <- as.numeric(unique(species_sorted2$x_exact)[i])#lat value
+  species_ranges2[i,2] <- as.numeric(max(species_sorted2[which(species_sorted2$x_exact == species_ranges2[i,1]),]$richness))
+}
+
+#p3<-ggplot(atl_rich_3d,aes(y_exact,richness))+
+  geom_point(size=3)+
+  ylim(0,60)+
+  labs(x ="latitude",y="2d planar range extent richness")
+
+
+names(atl_lat_rich)[names(atl_lat_rich)=='richness']<-'rich_long'
+names(species_ranges)[names(species_ranges)=='max_rich']<-'rich_geog'
+names(species_ranges2)[names(species_ranges2)=='max_rich']<-'rich_2d'
+
+names(atl_lat_rich)[names(atl_lat_rich)=='x.y']<-'long'
+names(species_ranges)[names(species_ranges)=='x.y']<-'long'
+names(species_ranges2)[names(species_ranges2)=='x.y']<-'long'
+
+atl_long_rich_combine<-merge(atl_lat_rich,species_ranges,by="long")
+
+atl_long_rich_combine2<-merge(atl_long_rich_combine,species_ranges2,by='long')
+
+#to save output
+write.csv(atl_long_rich_combine2,"output/atl_long_rich_combine2.csv")
+
+p1
+p2
+```
+
+
+
+8. run this to analyze richness with latitude
+8c. Pacific Ocean
+
+---note for tomorrow: this below worked
+change below code to work for Pacific Ocean! good luck!
+
+```{r}
+attach(atl_richness_1)
+attach(atl_richness_raw)
+
+#for geog
+attach(pac_geog_lat)
+#for 2d
+attach(pac_2d_lat)
+#for 1d
+attach(pac_merge4)
+
+attach(pac_combine_for1dlatextent)
+
+#1d lat extent for atl
+pac_lat_rich<-pac_combine_for1dlatextent %>%
+  group_by(y) %>%
+  summarise(n_distinct(species))
+
+names(pac_lat_rich)[names(pac_lat_rich)=='n_distinct(species)']<-'richness_lat'
+
+
+#1d geog, first attach xyz to pivot table for left and right parts of pac
+attach(pac_left_for1dgeog)
+attach(pac_left_geog_raw_rich)
+attach(pac_right_for1dgeog)
+attach(pac_right_geog_raw_rich)
+
+pac_left_merge<-merge(pac_left_geog_raw_rich,pac_left_for1dgeog,by='TARGET_FID_LEFT')
+pac_right_merge<-merge(pac_right_geog_raw_rich,pac_right_for1dgeog,by='TARGET_FID_RIGHT')
+
+#CHANGE NAMES OF TARGET FIDS TO BE THE SAME BETWEEN LEFT AND RIGHT SO THEY CAN BE COMBINED
+names(pac_left_merge)[names(pac_left_merge)=='TARGET_FID_LEFT']<-'TARGET_FID'
+names(pac_right_merge)[names(pac_right_merge)=='TARGET_FID_RIGHT']<-'TARGET_FID'
+
+names(pac_left_merge)[names(pac_left_merge)=='species_left']<-'species'
+names(pac_left_merge)[names(pac_left_merge)=='depth_left']<-'depth'
+names(pac_left_merge)[names(pac_left_merge)=='x_left']<-'x'
+names(pac_left_merge)[names(pac_left_merge)=='y_left']<-'y'
+
+
+
+names(pac_right_merge)[names(pac_right_merge)=='species_right']<-'species'
+names(pac_right_merge)[names(pac_right_merge)=='depth_right']<-'depth'
+names(pac_right_merge)[names(pac_right_merge)=='x_right']<-'x'
+names(pac_right_merge)[names(pac_right_merge)=='y_right']<-'y'
+
+#to combine left and right in excel
+write.csv(pac_left_merge,"output/pac_left_merge.csv")
+#to save output
+write.csv(pac_right_merge,"output/mac_right_merge.csv")
+
+#bring combined dataset back:
+attach(pac_geog_lat_ready)
+
+#pull out max rich per lat:
+
+species_ranges4<-data.frame(y=integer(),max_rich=integer(),stringsAsFactors = F)
+
+#to sort data by lat
+species_sorted4<- pac_geog_lat_ready[order(pac_geog_lat_ready$y),]
+
+#species_sorted4[is.na(species_sorted)] <- 0
+
+#for loop: go through maxi and pull out the max richness for each lat 
+for (i in 1:length(unique(species_sorted4$y))) {
+  species_ranges4[i,1] <- as.numeric(unique(species_sorted4$y)[i])#lat value
+  species_ranges4[i,2] <- as.numeric(max(species_sorted4[which(species_sorted4$y == species_ranges4[i,1]),]$richness))
+}
+
+pac_geog_merge<-merge(pac_left_merge,pac_right_merge,by='TARGET_FID',all=T)
+
+#2d richness with lat
+attach(pac_2d_left_working)
+attach(pac_2d_right_working)
+attach(pac_2d_left_worked)
+attach(pac_2d_right_worked)
+
+pac_left_merge_2d<-merge(pac_2d_left_worked,pac_2d_left_working,by='TARGET_FID')
+pac_right_merge_2d<-merge(pac_2d_right_worked,pac_2d_right_working,by='TARGET_FID')
+
+#to combine left and right in excel
+write.csv(pac_left_merge_2d,"output/pac_left_merge2d.csv")
+#to save output
+write.csv(pac_right_merge_2d,"output/mac_right_merge2d.csv")
+
+attach(pac_2d_lat_ready)
+
+#pull out max rich per lat:
+species_ranges5<-data.frame(y=integer(),max_rich=integer(),stringsAsFactors = F)
+
+#to sort data by lat
+species_sorted5<- pac_2d_lat_ready[order(pac_2d_lat_ready$y),]
+
+#species_sorted4[is.na(species_sorted)] <- 0
+
+#for loop: go through maxi and pull out the max richness for each lat 
+for (i in 1:length(unique(species_sorted5$y))) {
+  species_ranges5[i,1] <- as.numeric(unique(species_sorted5$y)[i])#lat value
+  species_ranges5[i,2] <- as.numeric(max(species_sorted5[which(species_sorted5$y == species_ranges5[i,1]),]$richness))
+}
+
+names(species_ranges5)[names(species_ranges5)=='max_rich']<-'rich_2d'
+#subset 1d 
+#data <- subset(pac_merge4, select = c('species1','min_lat','max_lat'))
+
+#pac_rich_1d <- data.frame(lat=as.numeric(),richness=as.numeric())
+
+#1d geographic richness
+#pac_geog_lat_rich<-pac_geog_lat %>%
+#  group_by(y)%>%
+#  summarise(n_distinct(species1))
+
+#names(pac_geog_lat_rich)[names(pac_geog_lat_rich)=='n_distinct(species1)']<-'richness'
+
+#2d richness
+
+
+
+
+
+
+pac_2d_lat_rich<-pac_2d_lat %>%
+  group_by(y)%>%
+  summarise(n_distinct(species1))
+
+names(pac_2d_lat_rich)[names(pac_2d_lat_rich)=='n_distinct(species1)']<-'richness2d'
+
+pac_temp_combine<-merge(species_ranges5,species_ranges4,by="y")
+pac_temp_combine2<-merge(pac_temp_combine, pac_lat_rich,by='y')
+
+ggplot(pac_temp_combine2,aes(y))+
+geom_line(aes(y=richness_lat,color="richness_lat"),size=1)+  
+geom_line(aes(y=max_rich,color="richness_geog"),size=1)+
+geom_line(aes(y=rich_2d,color="rich_2d"),size=1)+
+xlab(label="latitude (degrees)")+
+ylab("Richness")+
+theme_classic()
+
+ggsave(filename="pac_lat_rich.tiff",path="figs/")
+
+#to save the data to make this plot!
+#to save output
+write.csv(pac_temp_combine2,"output/pac_temp_combine2.csv")
+
+#to pull out max rich per lat value for p2
+#create empty dataframe to insert max  richness per lat
+species_ranges<-data.frame(y=integer(),max_rich=integer(),stringsAsFactors = F)
+
+#to sort data by lat
+species_sorted<- atl_lat_1_d_merge[order(atl_lat_1_d_merge$y.y),]
+
+species_sorted[is.na(species_sorted)] <- 0
+
+#for loop: go through maxi and pull out the max richness for each lat 
+for (i in 1:length(unique(species_sorted$y.y))) {
+  species_ranges[i,1] <- as.numeric(unique(species_sorted$y.y)[i])#lat value
+  species_ranges[i,2] <- as.numeric(max(species_sorted[which(species_sorted$y.y == species_ranges[i,1]),]$richness))
+}
+
+species_ranges<-round(species_ranges,2)
+
+atl_lat_1_d_merge<-merge(atl_richness_1,atl_richness_raw,by="target_fid")
+
+#1d lat extent for atl
+atl_lat_rich<-atl_lat_1_d_merge %>%
+  group_by(y.y) %>%
+  summarise(n_distinct(species))
+
+names(atl_lat_rich)[names(atl_lat_rich)=='n_distinct(species)']<-'richness'
+
+
+atl_lat_rich<-round(atl_lat_rich,2)
+
+p1<-ggplot(atl_lat_rich,aes(y.y,richness))+
+  geom_point(size=3)+
+  ylim(0,60)+
+  labs(x ="latitude",y="1d latitude extent richness")
+
+
+
+#to pull out max rich per lat value for p2
+#create empty dataframe to insert max  richness per lat
+species_ranges<-data.frame(y.y=integer(),max_rich=integer(),stringsAsFactors = F)
+
+#to sort data by lat
+species_sorted<- atl_lat_1_d_merge[order(atl_lat_1_d_merge$y.y),]
+
+species_sorted[is.na(species_sorted)] <- 0
+
+#for loop: go through maxi and pull out the max richness for each lat 
+for (i in 1:length(unique(species_sorted$y.y))) {
+  species_ranges[i,1] <- as.numeric(unique(species_sorted$y.y)[i])#lat value
+  species_ranges[i,2] <- as.numeric(max(species_sorted[which(species_sorted$y.y == species_ranges[i,1]),]$richness))
+}
+
+species_ranges<-round(species_ranges,2)
+
+#p2<-ggplot(atl_lat_1_d_merge,aes(y.y,richness))+
+  geom_point()+
+  ylim(0,60)+
+  labs(x ="latitude",y="1d geographic extent richness")
+  
+
+#to pull out max rich per lat value for p3
+#create empty dataframe to insert max  richness per lat
+species_ranges2<-data.frame(y.y=integer(),max_rich=integer(),stringsAsFactors = F)
+
+#to sort data by lat
+species_sorted2<- atl_rich_2d[order(atl_rich_2d$y_exact),]
+
+#for loop: go through maxi and pull out the max richness for each lat 
+for (i in 1:length(unique(species_sorted2$y_exact))) {
+  species_ranges2[i,1] <- as.numeric(unique(species_sorted2$y_exact)[i])#lat value
+  species_ranges2[i,2] <- as.numeric(max(species_sorted2[which(species_sorted2$y_exact == species_ranges2[i,1]),]$richness))
+}
+
+#p3<-ggplot(atl_rich_3d,aes(y_exact,richness))+
+  geom_point(size=3)+
+  ylim(0,60)+
+  labs(x ="latitude",y="2d planar range extent richness")
+
+
+names(atl_lat_rich)[names(atl_lat_rich)=='richness']<-'rich_lat'
+names(species_ranges)[names(species_ranges)=='max_rich']<-'rich_geog'
+names(species_ranges2)[names(species_ranges2)=='max_rich']<-'rich_2d'
+
+names(atl_lat_rich)[names(atl_lat_rich)=='y.y']<-'lat'
+names(species_ranges)[names(species_ranges)=='y.y']<-'lat'
+names(species_ranges2)[names(species_ranges2)=='y.y']<-'lat'
+
+atl_lat_rich_combine<-merge(atl_lat_rich,species_ranges,by="lat")
+
+atl_lat_rich_combine2<-merge(atl_lat_rich_combine,species_ranges2,by='lat')
+
+#to save output
+write.csv(atl_lat_rich_combine2,"output/atl_lat_rich_combine2.csv")
+
+```
+
+
+--- need to figure out how to add the 1d long. use the above pac lat to figure out.
+plot pac rich with long (modifying from lat analyses)
+```{r}
+
+#1d lat extent for atl
+attach(pac_combine_for1dlatextent)
+
+pac_long_rich<-pac_combine_for1dlatextent %>%
+  group_by(x) %>%
+  summarise(n_distinct(species))
+
+names(pac_long_rich)[names(pac_long_rich)=='n_distinct(species)']<-'richness_long'
+
+
+
+
+#bring combined dataset back:
+attach(pac_geog_lat_ready)
+
+#pull out max rich per lat:
+
+species_ranges4<-data.frame(x=integer(),max_rich=integer(),stringsAsFactors = F)
+
+#to sort data by lat
+species_sorted4<- pac_geog_lat_ready[order(pac_geog_lat_ready$x),]
+
+#species_sorted4[is.na(species_sorted)] <- 0
+
+#for loop: go through maxi and pull out the max richness for each lat 
+for (i in 1:length(unique(species_sorted4$x))) {
+  species_ranges4[i,1] <- as.numeric(unique(species_sorted4$x)[i])#lat value
+  species_ranges4[i,2] <- as.numeric(max(species_sorted4[which(species_sorted4$x == species_ranges4[i,1]),]$richness))
+}
+
+pac_geog_merge<-merge(pac_left_merge,pac_right_merge,by='TARGET_FID',all=T)
+
+#2d richness with lat
+attach(pac_2d_left_working)
+attach(pac_2d_right_working)
+attach(pac_2d_left_worked)
+attach(pac_2d_right_worked)
+
+pac_left_merge_2d<-merge(pac_2d_left_worked,pac_2d_left_working,by='TARGET_FID')
+pac_right_merge_2d<-merge(pac_2d_right_worked,pac_2d_right_working,by='TARGET_FID')
+
+#to combine left and right in excel
+write.csv(pac_left_merge_2d,"output/pac_left_merge2d.csv")
+#to save output
+write.csv(pac_right_merge_2d,"output/mac_right_merge2d.csv")
+
+attach(pac_2d_lat_ready)
+
+#pull out max rich per lat:
+species_ranges5<-data.frame(x=integer(),max_rich=integer(),stringsAsFactors = F)
+
+#to sort data by lat
+species_sorted5<- pac_2d_lat_ready[order(pac_2d_lat_ready$x),]
+
+#species_sorted4[is.na(species_sorted)] <- 0
+
+#for loop: go through maxi and pull out the max richness for each lat 
+for (i in 1:length(unique(species_sorted5$x))) {
+  species_ranges5[i,1] <- as.numeric(unique(species_sorted5$x)[i])#lat value
+  species_ranges5[i,2] <- as.numeric(max(species_sorted5[which(species_sorted5$x == species_ranges5[i,1]),]$richness))
+}
+
+names(species_ranges5)[names(species_ranges5)=='max_rich']<-'rich_2d'
+#subset 1d 
+#data <- subset(pac_merge4, select = c('species1','min_lat','max_lat'))
+
+#pac_rich_1d <- data.frame(lat=as.numeric(),richness=as.numeric())
+
+#1d geographic richness
+#pac_geog_lat_rich<-pac_geog_lat %>%
+#  group_by(y)%>%
+#  summarise(n_distinct(species1))
+
+#names(pac_geog_lat_rich)[names(pac_geog_lat_rich)=='n_distinct(species1)']<-'richness'
+
+#2d richness
+
+
+
+
+
+
+pac_2d_lat_rich<-pac_2d_lat %>%
+  group_by(x)%>%
+  summarise(n_distinct(species1))
+
+names(pac_2d_lat_rich)[names(pac_2d_lat_rich)=='n_distinct(species1)']<-'richness2d'
+
+pac_temp_combine_long<-merge(species_ranges5,species_ranges4,by="x")
+pac_temp_combine2_long<-merge(pac_temp_combine_long, pac_long_rich,by='x')
+
+ggplot(pac_temp_combine2_long,aes(x))+
+geom_line(aes(y=richness_long,color="richness_long"),size=1)+  
+geom_line(aes(y=max_rich,color="richness_geog"),size=1)+
+geom_line(aes(y=rich_2d,color="rich_2d"),size=1)+
+xlab(label="longitude (degrees)")+
+ylab("Richness")+
+theme_classic()
+
+ggsave(filename="pac_lat_rich.tiff",path="figs/")
+
+#to save the data to make this plot!
+#to save output
+write.csv(pac_temp_combine2_long,"output/pac_temp_combine2_long.csv")
+
+
+#adjusted x
+
+attach(pac_temp_combine2_long_adj)
+
+ggplot(pac_temp_combine2_long_adj,aes(x_adjust))+
+geom_line(aes(y=richness_long,color="richness_long"),size=1)+  
+geom_line(aes(y=max_rich,color="richness_geog"),size=1)+
+geom_line(aes(y=rich_2d,color="rich_2d"),size=1)+
+xlab(label="longitude (degrees)")+
+ylab("Richness")+
+theme_classic()
+
+ggsave(filename="pac_long_rich.tiff",path="figs/")
+
+```
+
+
+
+9. plot richness with latitude
+9a. Atlantic Ocean
+
+
+```{r}
+
+attach(atl_lat_rich_combine2)
+
+ggplot(atl_lat_rich_combine2,aes(lat))+
+geom_line(aes(y=rich_lat,color="lat"),size=1)+ 
+geom_line(aes(y=rich_geog,color="geog"),size=1)+
+geom_line(aes(y=rich_2d,color="planar"),size=1)+
+xlab(label="latitude (degrees)")+
+ylab("Richness")+
+theme_classic()
+
+
+
+#to save figure
+ggsave(filename="atl_lat_rich.tiff",path="figs/")
+
+```
+
+
+9. plot richness with long
+9a. Atlantic Ocean
+```{r}
+
+attach(atl_long_rich_combine2)
+
+ggplot(atl_long_rich_combine2,aes(long))+
+geom_line(aes(y=rich_long,color="long"),size=1)+ 
+geom_line(aes(y=rich_geog,color="geog"),size=1)+
+geom_line(aes(y=rich_2d,color="planar"),size=1)+
+xlab(label="longitude (degrees)")+
+ylab("Richness")+
+theme_classic()
+
+
+#to save figure
+ggsave(filename="atl_long_rich.tiff",path="figs/")
+
+
+```
+
+
+9. plot richness with latitude
+9c. Pacific Ocean
+
+```{r}
+
+attach(pac_temp_combine2)
+
+ggplot(pac_temp_combine2,aes(y))+
+geom_line(aes(y=richness_lat,color="richness_lat"),size=1)+  
+geom_line(aes(y=max_rich,color="richness_geog"),size=1)+
+geom_line(aes(y=rich_2d,color="rich_2d"),size=1)+
+xlab(label="latitude (degrees)")+
+ylab("Richness")+
+theme_classic()
+
+ggsave(filename="pac_lat_rich.tiff",path="figs/")
+
+```
+
+
+
+```{{r}
+#code removed from above
+
+
+#1d geographic richness
+atl_lat_1_d_merge<-merge(atl_richness_1,atl_richness_raw,by="target_fid")
+
+#1d lat extent for atl
+atl_lat_rich<-atl_lat_1_d_merge %>%
+  group_by(y.y) %>%
+  summarise(n_distinct(species))
+
+names(atl_lat_rich)[names(atl_lat_rich)=='n_distinct(species)']<-'richness'
+
+
+atl_lat_rich<-round(atl_lat_rich,2)
+
+p1<-ggplot(atl_lat_rich,aes(y.y,richness))+
+  geom_point(size=3)+
+  ylim(0,60)+
+  labs(x ="latitude",y="1d latitude extent richness")
+
+
+
+#to pull out max rich per lat value for p2
+#create empty dataframe to insert max  richness per lat
+species_ranges<-data.frame(y.y=integer(),max_rich=integer(),stringsAsFactors = F)
+
+#to sort data by lat
+species_sorted<- atl_lat_1_d_merge[order(atl_lat_1_d_merge$y.y),]
+
+species_sorted[is.na(species_sorted)] <- 0
+
+#for loop: go through maxi and pull out the max richness for each lat 
+for (i in 1:length(unique(species_sorted$y.y))) {
+  species_ranges[i,1] <- as.numeric(unique(species_sorted$y.y)[i])#lat value
+  species_ranges[i,2] <- as.numeric(max(species_sorted[which(species_sorted$y.y == species_ranges[i,1]),]$richness))
+}
+
+species_ranges<-round(species_ranges,2)
+
+#p2<-ggplot(atl_lat_1_d_merge,aes(y.y,richness))+
+  geom_point()+
+  ylim(0,60)+
+  labs(x ="latitude",y="1d geographic extent richness")
+  
+#to pull out max rich per lat value for p3
+#create empty dataframe to insert max  richness per lat
+species_ranges2<-data.frame(y.y=integer(),max_rich=integer(),stringsAsFactors = F)
+
+#to sort data by lat
+species_sorted2<- atl_rich_2d[order(atl_rich_2d$y_exact),]
+
+#for loop: go through maxi and pull out the max richness for each lat 
+for (i in 1:length(unique(species_sorted2$y_exact))) {
+  species_ranges2[i,1] <- as.numeric(unique(species_sorted2$y_exact)[i])#lat value
+  species_ranges2[i,2] <- as.numeric(max(species_sorted2[which(species_sorted2$y_exact == species_ranges2[i,1]),]$richness))
+}
+
+#p3<-ggplot(atl_rich_3d,aes(y_exact,richness))+
+  geom_point(size=3)+
+  ylim(0,60)+
+  labs(x ="latitude",y="2d planar range extent richness")
+
+
+names(atl_lat_rich)[names(atl_lat_rich)=='richness']<-'rich_lat'
+names(species_ranges)[names(species_ranges)=='max_rich']<-'rich_geog'
+names(species_ranges2)[names(species_ranges2)=='max_rich']<-'rich_2d'
+
+names(atl_lat_rich)[names(atl_lat_rich)=='y.y']<-'lat'
+names(species_ranges)[names(species_ranges)=='y.y']<-'lat'
+names(species_ranges2)[names(species_ranges2)=='y.y']<-'lat'
+
+atl_lat_rich_combine<-merge(atl_lat_rich,species_ranges,by="lat")
+
+atl_lat_rich_combine2<-merge(atl_lat_rich_combine,species_ranges2,by='lat')
+
+ggplot(atl_lat_rich_combine2,aes(lat))+
+geom_line(aes(y=rich_lat,color="lat"),size=1)+ 
+geom_line(aes(y=rich_geog,color="geog"),size=1)+
+geom_line(aes(y=rich_2d,color="planar"),size=1)+
+xlab(label="latitude (degrees)")+
+ylab("Richness")+
+theme_classic()
+
+
+
+#to save figure and output
+
+ggsave(filename="atl_lat_rich.tiff",path="figs/")
+
+write.csv(ind_lat_merge,"output/ind_lat_merge.csv")
+
+
+```
