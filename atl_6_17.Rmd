@@ -1609,15 +1609,55 @@ pac_depth_rich_test<-merge(pac_rich_1d,species_ranges6,by="depth")
 ```{r}
 attach(atl_depth_rich)
 
-ggplot(atl_depth_rich,aes(depth))+
-geom_line(aes(y=richness2d,color="2d"),size=1)+ 
-geom_line(aes(y=richness1d,color="1d"),size=1)+
+install.packages("reshape2")
+library(reshape2)
+
+#ggplot(atl_depth_rich3,aes(depth,rich))+
+#geom_line(aes(y=type$richness2d,color="2d"),size=1)+ 
+#geom_line(aes(y=type$richness1d,color="1d"),size=1)+
+#xlab(label="Depth (m)")+
+#ylab("Richness")+
+#theme_classic()
+
+#to convert dataset from wide to long:
+atl_depth_rich2<- melt(atl_depth_rich, id.vars=c("X1","depth"))
+atl_depth_rich2
+
+#to save output
+write.csv(atl_depth_rich2,"output/atl_depth_rich2.csv")
+
+#in excel, changed names of columns for atl_depth_rich3
+
+atl_depth_rich3plot<-ggplot(data=atl_depth_rich3,aes(depth,rich,colour=type))+
+geom_line()+
+#geom_smooth(se=F,method=loess)+
 xlab(label="Depth (m)")+
 ylab("Richness")+
 theme_classic()
+atl_depth_rich3plot
 
 #to save figure
-ggsave(filename="atl_depth_rich.tiff",path="figs/")
+ggsave(filename="atl_depth_rich3plot.tiff",path="figs/")
+
+
+mod1<-aov(rich~depth*type,data=atl_depth_rich3)
+summary (mod1)
+
+mod2<-aov(rich~depth+type,data=atl_depth_rich3)
+summary (mod2)
+
+anova(mod1,mod2)
+
+AIC(mod1,mod2)
+pred<-predict(mod2)
+
+pred_atl_depth_rich3plot<-ggplot(data=cbind(atl_depth_rich3,pred),
+       aes(depth,rich,color=type))+geom_point()+
+  facet_grid(.~type)+geom_line(aes(y=pred))
+pred_atl_depth_rich3plot
+
+ggsave(filename="pred_atl_depth_rich3plot.tiff",path="figs/")
+
 
 
 ```
