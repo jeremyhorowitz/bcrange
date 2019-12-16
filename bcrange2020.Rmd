@@ -37,15 +37,20 @@ attach(pac_mbg_combine_edit)
 
 ```{r}
 install.packages("tidyverse")
-library(tidyverse)
+
 install.packages("plotly")
-library(plotly)
+
 install.packages("cowplot")
-library(cowplot)
+
 install.packages("sp")
 library(sp)
 install.packages("quantreg")
 library(quantreg)
+install.packages("reshape2")
+library(reshape2)
+library(tidyverse)
+library(plotly)
+library(cowplot)
 ```
 
 3. analyses to produce range size with depth and latitude plots
@@ -1348,66 +1353,6 @@ write.csv(atl_depth_rich,"output/atl_depth_rich.csv")
 
 ```
 
-6. run this to analyze richness with depth
-6b. Indian Ocean
-
-```{r}
-
-#attach(all_ready3)
-
-#subset atlantic from 2d richness dataset
-#ind_rich_2d<-subset(all_ready3,ocean=="indian")
-
-#reran richness analyses with just four species. this is the dataset with 2d and 1d geog rich:
-attach(ind_2d_1d_merge)
-
-#subset 1d 
-data <- subset(ind_merge4, select = c('species1','min_depth','max_depth'))
-
-ind_rich_1d <- data.frame(depth=as.numeric(),richness=as.numeric())
-
-for (i in 1:5336) {
-  ccc <- vector()  
-  for (k in 1:nrow(data)){
-    a<- if (i>=data$min_depth[k] & i<=data$max_depth[k]) {1} else {0}
-    ccc <- c(ccc,a)
-    
-    
-  }
-  ind_rich_1d[i,1] <- i
-  ind_rich_1d[i,2] <- sum(ccc)
-}
-
-#for geog
-species_ranges3_geog<-data.frame(depth=integer(),max_rich=integer(),stringsAsFactors = F)
-
-species_sorted3<- ind_2d_1d_merge[order(ind_2d_1d_merge$depth.y),]
-
-for (i in 1:length(unique(species_sorted3$depth.y))) {
-  species_ranges3_geog[i,1] <- as.numeric(unique(species_sorted3$depth.y)[i])#depth value
-  species_ranges3_geog[i,2] <- as.numeric(max(species_sorted3[which(species_sorted3$depth.y == species_ranges3_geog[i,1]),]$rich_1d_geog))
-}
-
-#for 2d
-species_ranges3_2d<-data.frame(depth=integer(),max_rich=integer(),stringsAsFactors = F)
-
-species_sorted3<- ind_2d_1d_merge[order(ind_2d_1d_merge$depth.y),]
-
-for (i in 1:length(unique(species_sorted3$depth.y))) {
-  species_ranges3_2d[i,1] <- as.numeric(unique(species_sorted3$depth.y)[i])#depth value
-  species_ranges3_2d[i,2] <- as.numeric(max(species_sorted3[which(species_sorted3$depth.y == species_ranges3_2d[i,1]),]$rich_2d))
-}
-
-
-names(ind_rich_1d)[names(ind_rich_1d)=='richness']<-'richness1d'
-names(species_ranges3_2d)[names(species_ranges3_2d)=='max_rich']<-'richness2d'
-
-ind_depth_rich<-merge(ind_rich_1d,species_ranges3_2d,by="depth")
-
-#to save output
-write.csv(ind_depth_rich,"output/ind_depth_rich.csv")
-
-```
 
 6. run this to analyze richness with depth
 6c. Pacific Ocean
@@ -1503,9 +1448,9 @@ pac_depth_rich_test<-merge(pac_rich_1d,species_ranges6,by="depth")
 
 ```{r}
 attach(atl_depth_rich)
+attach(atl_depth_rich3)
 
-install.packages("reshape2")
-library(reshape2)
+
 
 #ggplot(atl_depth_rich3,aes(depth,rich))+
 #geom_line(aes(y=type$richness2d,color="2d"),size=1)+ 
