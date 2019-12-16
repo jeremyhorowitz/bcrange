@@ -20,16 +20,6 @@ attach(atl_richness_raw)
 #test
 ```
 
-```{r}
-attach(occurrence_data_2)
-attach(indian_occurrences)
-attach(ind_volumes)
-attach(ind_range_and_lat2)
-attach(ind_2d_1d_merge)
-attach(ind_july19_rich_raw_lat3)
-attach(ind_2d_1d_merge_cleaned)
-
-```
 
 ```{r}
 attach(occurrence_data_2)
