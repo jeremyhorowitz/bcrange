@@ -1525,6 +1525,24 @@ pac_depth_rich3plot
 #to save figure 
 ggsave(filename="pac_depth_rich3plot.tiff",path="figs/")
 
+mod1<-aov(rich~depth*type,data=pac_depth_rich3)
+summary (mod1)
+
+mod2<-aov(rich~depth+type,data=pac_depth_rich3)
+summary (mod2)
+
+anova(mod1,mod2)
+
+AIC(mod1,mod2)
+pred<-predict(mod2)
+
+pred_pac_depth_rich3plot<-ggplot(data=cbind(pac_depth_rich3,pred),
+       aes(depth,rich,color=type))+geom_point()+
+  facet_grid(.~type)+geom_line(aes(y=pred))
+pred_pac_depth_rich3plot
+
+ggsave(filename="pred_pac_depth_rich3plot.tiff",path="figs/")
+
 
 
 ```
@@ -2112,6 +2130,24 @@ atl_lat_rich_combine4plot
 #to save figure 
 ggsave(filename="atl_lat_rich_combine4plot.tiff",path="figs/")
 
+mod1<-aov(rich~lat*type,data=atl_lat_rich_combine4)
+summary (mod1)
+
+mod2<-aov(rich~lat+type,data=atl_lat_rich_combine4)
+summary (mod2)
+
+anova(mod1,mod2)
+
+AIC(mod1,mod2)
+pred<-predict(mod2)
+
+pred_atl_lat_rich_combine4plot<-ggplot(data=cbind(atl_lat_rich_combine4,pred),
+       aes(lat,rich,color=type))+geom_point()+
+  facet_grid(.~type)+geom_line(aes(y=pred))
+pred_atl_lat_rich_combine4plot
+
+ggsave(filename="pred_atl_lat_rich_combine4plot.tiff",path="figs/")
+
 ```
 
 
@@ -2138,6 +2174,24 @@ atl_long_rich_combine4plot
 
 #to save figure 
 ggsave(filename="atl_long_rich_combine4plot.tiff",path="figs/")
+
+mod1<-aov(rich~long*type,data=atl_long_rich_combine4)
+summary (mod1)
+
+mod2<-aov(rich~long+type,data=atl_long_rich_combine4)
+summary (mod2)
+
+anova(mod1,mod2)
+
+AIC(mod1,mod2)
+pred<-predict(mod2)
+
+pred_atl_long_rich_combine4plot<-ggplot(data=cbind(atl_long_rich_combine4,pred),
+       aes(long,rich,color=type))+geom_point()+
+  facet_grid(.~type)+geom_line(aes(y=pred))
+pred_atl_long_rich_combine4plot
+
+ggsave(filename="pred_atl_long_rich_combine4plot.tiff",path="figs/")
 
 
 ```
@@ -2167,6 +2221,24 @@ pac_temp_combine4plot
 
 #to save figure 
 ggsave(filename="pac_temp_combine4plot.tiff",path="figs/")
+
+mod1<-aov(rich~lat*type,data=pac_temp_combine4)
+summary (mod1)
+
+mod2<-aov(rich~lat+type,data=pac_temp_combine4)
+summary (mod2)
+
+anova(mod1,mod2)
+
+AIC(mod1,mod2)
+pred<-predict(mod2)
+
+pred_pac_lat_rich_combine4plot<-ggplot(data=cbind(pac_temp_combine4,pred),
+       aes(lat,rich,color=type))+geom_point()+
+  facet_grid(.~type)+geom_line(aes(y=pred))
+pred_pac_lat_rich_combine4plot
+
+ggsave(filename="pred_atl_lat_rich_combine4plot.tiff",path="figs/")
 ```
 
 
