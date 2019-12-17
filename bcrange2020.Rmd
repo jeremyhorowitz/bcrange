@@ -2090,19 +2090,27 @@ ggsave(filename="pac_long_rich.tiff",path="figs/")
 ```{r}
 
 attach(atl_lat_rich_combine2)
+attach(atl_lat_rich_combine3)
+attach(atl_lat_rich_combine4)
 
-ggplot(atl_lat_rich_combine2,aes(lat))+
-geom_line(aes(y=rich_lat,color="lat"),size=1)+ 
-geom_line(aes(y=rich_geog,color="geog"),size=1)+
-geom_line(aes(y=rich_2d,color="planar"),size=1)+
-xlab(label="latitude (degrees)")+
+
+#to convert dataset from wide to long:
+atl_lat_rich_combine3<- melt(atl_lat_rich_combine2, id.vars=c("X1","lat"))
+atl_lat_rich_combine3
+
+#to save output
+write.csv(atl_lat_rich_combine3,"output/atl_lat_rich_combine3.csv")
+
+atl_lat_rich_combine4plot<-ggplot(data=atl_lat_rich_combine4,aes(lat,rich,colour=type))+
+geom_line()+
+#geom_smooth(se=F,method=loess)+
+xlab(label="lat (dec deg)")+
 ylab("Richness")+
 theme_classic()
+atl_lat_rich_combine4plot
 
-
-
-#to save figure
-ggsave(filename="atl_lat_rich.tiff",path="figs/")
+#to save figure 
+ggsave(filename="atl_lat_rich_combine4plot.tiff",path="figs/")
 
 ```
 
@@ -2113,17 +2121,23 @@ ggsave(filename="atl_lat_rich.tiff",path="figs/")
 
 attach(atl_long_rich_combine2)
 
-ggplot(atl_long_rich_combine2,aes(long))+
-geom_line(aes(y=rich_long,color="long"),size=1)+ 
-geom_line(aes(y=rich_geog,color="geog"),size=1)+
-geom_line(aes(y=rich_2d,color="planar"),size=1)+
-xlab(label="longitude (degrees)")+
+#to convert dataset from wide to long:
+atl_long_rich_combine3<- melt(atl_long_rich_combine2, id.vars=c("X1","long"))
+atl_long_rich_combine3
+
+#to save output
+write.csv(atl_long_rich_combine3,"output/atl_long_rich_combine3.csv")
+
+atl_long_rich_combine4plot<-ggplot(data=atl_long_rich_combine4,aes(long,rich,colour=type))+
+geom_line()+
+#geom_smooth(se=F,method=loess)+
+xlab(label="long (dec deg)")+
 ylab("Richness")+
 theme_classic()
+atl_long_rich_combine4plot
 
-
-#to save figure
-ggsave(filename="atl_long_rich.tiff",path="figs/")
+#to save figure 
+ggsave(filename="atl_long_rich_combine4plot.tiff",path="figs/")
 
 
 ```
@@ -2136,21 +2150,58 @@ ggsave(filename="atl_long_rich.tiff",path="figs/")
 
 attach(pac_temp_combine2)
 
-ggplot(pac_temp_combine2,aes(y))+
-geom_line(aes(y=richness_lat,color="richness_lat"),size=1)+  
-geom_line(aes(y=max_rich,color="richness_geog"),size=1)+
-geom_line(aes(y=rich_2d,color="rich_2d"),size=1)+
-xlab(label="latitude (degrees)")+
+#to convert dataset from wide to long:
+pac_temp_combine3<- melt(pac_temp_combine2, id.vars=c("X1","y"))
+pac_temp_combine3
+
+#to save output
+write.csv(pac_temp_combine3,"output/pac_temp_combine3.csv")
+
+pac_temp_combine4plot<-ggplot(data=pac_temp_combine4,aes(lat,rich,colour=type))+
+geom_line()+
+#geom_smooth(se=F,method=loess)+
+xlab(label="Lat (dec deg)")+
 ylab("Richness")+
 theme_classic()
+pac_temp_combine4plot
 
-ggsave(filename="pac_lat_rich.tiff",path="figs/")
+#to save figure 
+ggsave(filename="pac_temp_combine4plot.tiff",path="figs/")
+```
+
+
+10 plot richness with long
+10c. Pacific Ocean
+
+
+```{r}
+
+attach(pac_temp_combine2_long_adj)
+
+#to convert dataset from wide to long:
+pac_temp_combine2_long_adj2<- melt(pac_temp_combine2_long_adj, id.vars=c("X1","x","x_adjust"))
+pac_temp_combine2_long_adj2
+
+#to save output
+write.csv(pac_temp_combine2_long_adj2,"output/pac_temp_combine2_long_adj2.csv")
+
+pac_temp_combine2_long_adj3plot<-ggplot(data=pac_temp_combine2_long_adj3,aes(long_adj,rich,colour=type))+
+geom_line()+
+#geom_smooth(se=F,method=loess)+
+xlab(label="Long (dec deg)")+
+ylab("Richness")+
+theme_classic()
+pac_temp_combine2_long_adj3plot
+
+#to save figure 
+ggsave(filename="pac_temp_combine2_long_adj3plot.tiff",path="figs/")
+
 
 ```
 
 
 
-```{{r}
+```{r}
 #code removed from above
 
 
