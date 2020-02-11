@@ -452,7 +452,7 @@ last plot is of predicted values from model2
 
 plotting all lat on one plot for pac
 ```{r}
-
+install.packages("tidyverse")
 library(tidyverse)
 library(plotly)
 library(cowplot)
