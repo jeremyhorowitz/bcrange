@@ -455,7 +455,11 @@ last plot is of predicted values from model2
 
 plotting all lat on one plot for pac
 ```{r}
-
+install.packages("tidyverse")
+install.packages("plotly")
+install.packages("cowplot")
+install.packages("sp")
+install.packages("quantreg")
 library(tidyverse)
 library(plotly)
 library(cowplot)
@@ -468,6 +472,7 @@ pac_lat_all<-pac_subset[ pac_subset$type %in% c("lat_range","lat_planar_range","
 
 #remove bounding points
 pac_lat_all<-subset(pac_lat_all,!(species=="bound"))
+
 
 #log the dependent variable:
 pac_lat_all3<-pac_lat_all %>% mutate(area=log10(area))
@@ -501,6 +506,7 @@ pred_lat_plot_pac<-ggplot(data=cbind(pac_lat_all3,pred),
 pred_lat_plot_pac
 
 ggsave(filename="pred_lat_plott_pac.tiff",path="figs/")
+
 
 ```
 mod1: area size is the dependent,  mid lat is the covariate, with type (1d vs 2d and 2d planar) as the factor. 
