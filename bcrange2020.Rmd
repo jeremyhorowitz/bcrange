@@ -542,6 +542,7 @@ ggsave(filename="three_long_trends_pac.tiff",path="figs/")
 
 mod1<-aov(area~mid_long_adjust*type,data=pac_long_all3)
 summary (mod1)
+gam
 
 mod2<-aov(area~mid_long_adjust+type,data=pac_long_all3)
 summary (mod2)
