@@ -24,6 +24,8 @@ three_lat_trends_pac<-ggplot(data=pac_lat_all3,aes(mid,area,colour=type))+
   ylab("range area (m/m2)")
 three_lat_trends_pac
 
+what am i specifiing
+
 mod1<-aov(area~mid*type,data=pac_lat_all3)
 summary (mod1)
 
