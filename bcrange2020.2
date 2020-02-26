@@ -1,0 +1,52 @@
+---
+title: "bcrange2020.2"
+author: "jeremy horowitz"
+date: "February 27, 2020"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+plotting all lat on one plot for atl
+```{r}
+
+library(tidyverse)
+library(plotly)
+library(cowplot)
+library(sp)
+library(quantreg)
+
+attach(atl_ranges3)
+atl_subset<-subset(atl_ranges3,ocean=="atl")
+atl_lat_all<-atl_subset[ atl_subset$type %in% c("lat_range","lat_planar_range","lat_geog_range"),]
+
+#remove bounding points
+atl_lat_all<-subset(atl_lat_all,!(species=="bound"))
+
+#log the dependent variable:
+#atl_lat_all3<-atl_lat_all %>% mutate(area=log10(area))
+
+write.csv(atl_lat_all3,"output/atl_lat_all.csv")
+
+attach(atl_lat_all)
+
+lat_plot_atl<-ggplot(data=atl_lat_all,
+       aes(mid,area,color=type))+geom_point()+
+  geom_point(aes(y=area))+
+  geom_smooth(se=F,method=loess)+
+  theme_classic()+
+  xlim(-80,80)+
+  scale_y_continuous(trans='log10')+
+  xlab("Mid-latitude (decimal degree)")+
+  ylab("Latititude extent m/m2")
+
+
+lat_plot_atl
+
+ggsave(filename="lat_plot_atl.tiff",path="figs/")
+
+```
+
+
