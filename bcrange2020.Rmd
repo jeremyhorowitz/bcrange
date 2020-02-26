@@ -416,12 +416,16 @@ atl_lat_all3<-atl_lat_all %>% mutate(area=log10(area))
 
 write.csv(atl_lat_all3,"output/atl_lat_all3.csv")
 
+attach(atl_lat_all3)
+
 three_lat_trends_atl<-ggplot(data=atl_lat_all3,aes(mid,area,colour=type))+
 geom_point()+
 geom_smooth(se=F,method=lm)+
 #scale_y_continuous(trans='log2')+
 xlab("mid latitude (degrees latitude)")+
+  scale_x_continuous(breaks=c(-80,-45,0,45,80))+
 ylab("range area (m/m2)")
+#  facet_grid(.~type)
 three_lat_trends_atl
 
 ggsave(filename="three_lat_trends_atl.tiff",path="figs/")
@@ -441,6 +445,11 @@ pred_lat_plot_atl<-ggplot(data=cbind(atl_lat_all3,pred),
        aes(mid,area,color=type))+geom_point()+
   facet_grid(.~type)+geom_line(aes(y=pred))
 pred_lat_plot_atl
+
+pred_lat_plot_atl2<-ggplot(data=atl_lat_all3,
+       aes(mid,area,color=type))+geom_point()+
+  facet_grid(.~type)+geom_smooth(aes(y=area))
+pred_lat_plot_atl2
 
 ggsave(filename="pred_lat_plot_atl.tiff",path="figs/")
 
