@@ -25,9 +25,9 @@ atl_lat_all<-atl_subset[ atl_subset$type %in% c("lat_range","lat_planar_range","
 atl_lat_all<-subset(atl_lat_all,!(species=="bound"))
 
 #log the dependent variable:
-#atl_lat_all3<-atl_lat_all %>% mutate(area=log10(area))
+#atl_lat_all<-atl_lat_all %>% mutate(area=log10(area))
 
-write.csv(atl_lat_all3,"output/atl_lat_all.csv")
+write.csv(atl_lat_all,"output/atl_lat_all.csv")
 
 attach(atl_lat_all)
 
@@ -41,10 +41,66 @@ lat_plot_atl<-ggplot(data=atl_lat_all,
   xlim(-80,80)+
   scale_y_continuous(trans='log10')+
   xlab("Mid-latitude (decimal degree)")+
-  ylab("Latititude extent m/m2")
-
-
+  ylab("range extent m/m2")+
+  geom_point(aes(x=-80, y=0), colour="black")+
+  geom_point(aes(x=-40, y=1.445025e+14), colour="black")+
+  geom_point(aes(x=-0, y=4.295588e+14), colour="black")+
+  geom_point(aes(x=40, y=2.323491e+14), colour="black")+
+  geom_point(aes(x=80, y=0), colour="black")+
+  geom_point(aes(x=-40, y=2.890000e+14), colour="black")+
+  geom_point(aes(x=-0, y=8.590000e+14), colour="black")+
+  geom_point(aes(x=40, y=4.650000e+14), colour="black")+
+  geom_point(aes(x=-40, y=1.518389e+07), colour="black")+
+  geom_point(aes(x=0, y=3.036779e+07), colour="black")+
+  geom_point(aes(x=40, y=1.518389e+07), colour="black")
+  
 lat_plot_atl
 
 ggsave(filename="lat_plot_atl.tiff",path="figs/")
+
+
+
 ```
+no species occur with mid-latitudes <-30 dec deg lat. the largest ranged species occur between -30 and 0 degrees lat, and then ranges decrease in area northerly. there is a dip in species range size at 30 deg lat. this can be explaained by the relatively large number of small-ranged, possibly endemic species occuring in the caribbean. there are also relatively large ranged species at this latitude but the caribbean species are greter in richness and therefore modify the trend. the trend does not change depending on the way ranges are considered, which means that latitude extent alone is sufficent to represent range area vs mid-lat relationships.
+
+```{r}
+attach(atl_ranges3)
+pac_subset<-subset(atl_ranges3,ocean=="pac")
+pac_lat_all<-atl_subset[ atl_subset$type %in% c("lat_range","lat_planar_range","lat_geog_range"),]
+
+#remove bounding points
+pac_lat_all<-subset(atl_lat_all,!(species=="bound"))
+
+#log the dependent variable:
+#pac_lat_all<-atl_lat_all %>% mutate(area=log10(area))
+
+write.csv(pac_lat_all,"output/pac_lat_all.csv")
+
+attach(pac_lat_all)
+
+pac_lat_all$type<-factor(pac_lat_all$type,levels=c("lat_range","lat_planar_range","lat_geog_range"))
+
+lat_plot_pac<-ggplot(data=pac_lat_all,
+       aes(mid,area,color=type))+geom_point()+
+  geom_point(aes(y=area))+
+  geom_smooth(se=F,method=loess,size=2)+
+  theme_classic()+
+  xlim(-80,80)+
+  scale_y_continuous(trans='log10')+
+  xlab("Mid-latitude (decimal degree)")+
+  ylab("range extent m/m2")
+  geom_point(aes(x=-80, y=0), colour="black")+
+  geom_point(aes(x=-40, y=1.445025e+14), colour="black")+
+  geom_point(aes(x=-0, y=4.295588e+14), colour="black")+
+  geom_point(aes(x=40, y=2.323491e+14), colour="black")+
+  geom_point(aes(x=80, y=0), colour="black")+
+  geom_point(aes(x=-40, y=2.890000e+14), colour="black")+
+  geom_point(aes(x=-0, y=8.590000e+14), colour="black")+
+  geom_point(aes(x=40, y=4.650000e+14), colour="black")+
+  geom_point(aes(x=-40, y=1.518389e+07), colour="black")+
+  geom_point(aes(x=0, y=3.036779e+07), colour="black")+
+  geom_point(aes(x=40, y=1.518389e+07), colour="black")
+  
+pac_plot_atl
+
+ggsave(filename="lat_plot_atl.tiff",path="figs/")
