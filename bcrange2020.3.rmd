@@ -132,7 +132,7 @@ long_plot_atl<-ggplot(data=atl_long_all,
   geom_point(aes(y=area))+
   geom_smooth(se=F,method=loess,size=2)+
   theme_classic()+
-  xlim(-106,30)+
+  xlim(-110,45)+
   scale_y_continuous(trans='log10')+
   xlab("Mid-latitude (decimal degree)")+
   ylab("range extent m/m2")+
