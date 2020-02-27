@@ -177,7 +177,7 @@ long_plot_pac<-ggplot(data=pac_long_all,
   geom_point(aes(y=area))+
   geom_smooth(se=F,method=loess,size=2)+
   theme_classic()+
-  xlim(-110,45)+
+  #xlim(-110,45)+
   scale_y_continuous(trans='log10')+
   xlab("Mid-latitude (decimal degree)")+
   ylab("range extent m/m2")
@@ -197,7 +197,7 @@ long_plot_pac<-ggplot(data=pac_long_all,
 long_plot_pac
 
 ggsave(filename="long_plot_pac.tiff",path="figs/")
-
+```
 
 
 
