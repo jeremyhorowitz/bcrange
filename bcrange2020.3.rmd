@@ -108,3 +108,49 @@ lat_plot_pac
 ggsave(filename="lat_plot_pac.tiff",path="figs/")
 ```
 
+atl long all
+```{r}
+
+attach(atl_ranges3)
+atl_subset<-subset(atl_ranges3,ocean=="atl")
+atl_long_all<-atl_subset[ atl_subset$type %in% c("long_range","long_planar_range","long_geog_range"),]
+
+#remove bounding points
+atl_long_all<-subset(atl_long_all,!(species=="bound"))
+
+#log the dependent variable:
+#atl_long_all<-atl_long_all %>% mutate(area=log10(area))
+
+write.csv(atl_long_all,"output/atl_long_all.csv")
+
+attach(atl_long_all)
+
+atl_long_all$type<-factor(atl_long_all$type,levels=c("long_range","long_planar_range","long_geog_range"))
+
+long_plot_atl<-ggplot(data=atl_long_all,
+       aes(mid,area,color=type))+geom_point()+
+  geom_point(aes(y=area))+
+  geom_smooth(se=F,method=loess,size=2)+
+  theme_classic()+
+  xlim(-90,30)+
+  scale_y_continuous(trans='log10')+
+  xlab("Mid-latitude (decimal degree)")+
+  ylab("range extent m/m2")
+
+  geom_point(aes(x=-80, y=0), colour="black")+
+  geom_point(aes(x=-40, y=1.445025e+14), colour="black")+
+  geom_point(aes(x=-0, y=4.295588e+14), colour="black")+
+  geom_point(aes(x=40, y=2.323491e+14), colour="black")+
+  geom_point(aes(x=80, y=0), colour="black")+
+  geom_point(aes(x=-40, y=2.890000e+14), colour="black")+
+  geom_point(aes(x=-0, y=8.590000e+14), colour="black")+
+  geom_point(aes(x=40, y=4.650000e+14), colour="black")+
+  geom_point(aes(x=-40, y=1.518389e+07), colour="black")+
+  geom_point(aes(x=0, y=3.036779e+07), colour="black")+
+  geom_point(aes(x=40, y=1.518389e+07), colour="black")
+  
+long_plot_atl
+
+ggsave(filename="long_plot_atl.tiff",path="figs/")
+
+```
