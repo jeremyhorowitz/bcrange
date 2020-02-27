@@ -66,10 +66,10 @@ no species occur with mid-latitudes <-30 dec deg lat. the largest ranged species
 ```{r}
 attach(atl_ranges3)
 pac_subset<-subset(atl_ranges3,ocean=="pac")
-pac_lat_all<-atl_subset[ atl_subset$type %in% c("lat_range","lat_planar_range","lat_geog_range"),]
+pac_lat_all<-pac_subset[pac_subset$type %in% c("lat_range","lat_planar_range","lat_geog_range"),]
 
 #remove bounding points
-pac_lat_all<-subset(atl_lat_all,!(species=="bound"))
+pac_lat_all<-subset(pac_lat_all,!(species=="bound"))
 
 #log the dependent variable:
 #pac_lat_all<-atl_lat_all %>% mutate(area=log10(area))
@@ -88,19 +88,23 @@ lat_plot_pac<-ggplot(data=pac_lat_all,
   xlim(-80,80)+
   scale_y_continuous(trans='log10')+
   xlab("Mid-latitude (decimal degree)")+
-  ylab("range extent m/m2")
+  ylab("range extent m/m2")+
   geom_point(aes(x=-80, y=0), colour="black")+
-  geom_point(aes(x=-40, y=1.445025e+14), colour="black")+
-  geom_point(aes(x=-0, y=4.295588e+14), colour="black")+
-  geom_point(aes(x=40, y=2.323491e+14), colour="black")+
-  geom_point(aes(x=80, y=0), colour="black")+
-  geom_point(aes(x=-40, y=2.890000e+14), colour="black")+
-  geom_point(aes(x=-0, y=8.590000e+14), colour="black")+
-  geom_point(aes(x=40, y=4.650000e+14), colour="black")+
-  geom_point(aes(x=-40, y=1.518389e+07), colour="black")+
-  geom_point(aes(x=0, y=3.036779e+07), colour="black")+
-  geom_point(aes(x=40, y=1.518389e+07), colour="black")
-  
-pac_plot_atl
+  geom_point(aes(x=-45.000000, y=2.368199e+14), colour="black")+
+  geom_point(aes(x=-10, y=4.185974e+14), colour="black")+
+  geom_point(aes(x=30, y=1.603900e+14), colour="black")+
+  geom_point(aes(x=70, y=0), colour="black")+
+  geom_point(aes(x=-45, y=4.737704e+14), colour="black")+
+  geom_point(aes(x=-10, y=8.372510e+14), colour="black")+
+  geom_point(aes(x=30, y=3.208763e+14), colour="black")+
+  geom_point(aes(x=70, y=0), colour="black")+
+  geom_point(aes(x=-45, y=1.401611e+07), colour="black")+
+  geom_point(aes(x=-00, y=2.605160e+07), colour="black")+
+    geom_point(aes(x=30, y=1.192319e+07), colour="black")
 
-ggsave(filename="lat_plot_atl.tiff",path="figs/")
+  
+lat_plot_pac
+
+ggsave(filename="lat_plot_pac.tiff",path="figs/")
+```
+
