@@ -180,24 +180,237 @@ long_plot_pac<-ggplot(data=pac_long_all,
   #xlim(-110,45)+
   scale_y_continuous(trans='log10')+
   xlab("Mid-latitude (decimal degree)")+
-  ylab("range extent m/m2")
+  ylab("range extent m/m2")+
+  geom_point(aes(x=1, y=0), colour="black")+
+  geom_point(aes(x=60.83, y=2.568425e+14), colour="black")+
+  geom_point(aes(x=91.620, y=4.185974e+14), colour="black")+
+  geom_point(aes(x=144.500, y=1.507696e+14), colour="black")+
+  geom_point(aes(x=192.000, y=0), colour="black")+
+  geom_point(aes(x=60.830, y=5.138604e+14), colour="black")+
+  geom_point(aes(x=91.620, y=8.372510e+14), colour="black")+
+  geom_point(aes(x=144.500, y=3.016625e+14), colour="black")+
+  geom_point(aes(x=192.000, y=0), colour="black")+
+  geom_point(aes(x=-1, y=0), colour="black")+
+  geom_point(aes(x=60.830, y=1.202251e+07), colour="black")+
+  geom_point(aes(x=91.620, y=2.103938e+07), colour="black")+
+  geom_point(aes(x=144.500, y=9.016879e+06), colour="black")
 
-  geom_point(aes(x=-106, y=0), colour="black")+
-  geom_point(aes(x=-68.375000, y=2.094712e+14), colour="black")+
-  geom_point(aes(x=-30.750000, y=4.295588e+14), colour="black")+
-  geom_point(aes(x=6.875000, y=2.159317e+14), colour="black")+
-  geom_point(aes(x=44.5, y=0), colour="black")+
-  geom_point(aes(x=-68.375000, y=4.190000e+14), colour="black")+
-  geom_point(aes(x=-30.750000, y=8.590000e+14), colour="black")+
-  geom_point(aes(x=6.875000, y=4.300000e+14), colour="black")+
-  geom_point(aes(x=-68.375000, y=8.404622e+06), colour="black")+
-  geom_point(aes(x=-30.750000, y=1.680924e+07), colour="black")+
-  geom_point(aes(x=6.875000, y=8.404622e+06), colour="black")
   
 long_plot_pac
 
 ggsave(filename="long_plot_pac.tiff",path="figs/")
 ```
+```{r}
+attach(atl_ranges3)
+pac_subset<-subset(atl_ranges3,ocean=="pac")
+pac_depth_all<-pac_subset[pac_subset$type %in% c("depth_range","depth_planar_range"),]
+
+#remove bounding points
+pac_depth_all<-subset(pac_depth_all,!(species=="bound"))
+
+#log the dependent variable:
+#pac_long_all<-pac_long_all %>% mutate(area=log10(area))
+
+write.csv(pac_depth_all,"output/pac_depth_all.csv")
+
+attach(pac_depth_all)
+
+pac_depth_all$type<-factor(pac_depth_all$type,levels=c("depth_range","depth_planar_range"))
+
+depth_plot_pac<-ggplot(data=pac_depth_all,
+       aes(mid,area,color=type))+geom_point()+
+  geom_point(aes(y=area))+
+  geom_smooth(se=F,method=loess,size=2)+
+  theme_classic()+
+  #xlim(-110,45)+
+  scale_y_continuous(trans='log10')+
+  xlab("Mid-latitude (decimal degree)")+
+  ylab("range extent m/m2")+
+  geom_point(aes(x=0, y=0), colour="black")+
+  geom_point(aes(x=60.83, y=6.279183e+14), colour="black")+
+  geom_point(aes(x=5.0, y=7.433056e+14), colour="black")+
+  geom_point(aes(x=2260.00, y=8.372495e+14), colour="black")+
+  geom_point(aes(x=4520.00, y=8.372510e+14), colour="black")+
+  geom_point(aes(x=6780.00, y=5.392336e+14), colour="black")+
+  geom_point(aes(x=9040.25, y=0), colour="black")+
+  geom_point(aes(x=2260., y=4.520000e+03), colour="black")+
+  geom_point(aes(x=4520.00, y=9.040000e+03), colour="black")+
+  geom_point(aes(x=6780.00, y=4.520000e+03), colour="black")+
+  geom_point(aes(x=9040.00, y=0), colour="black")
+
+  
+depth_plot_pac
+
+ggsave(filename="depth_plot_pac.tiff",path="figs/")
+
+
+```
+
+
+```{r}
+attach(atl_ranges3)
+atl_subset<-subset(atl_ranges3,ocean=="atl")
+atl_depth_all<-atl_subset[atl_subset$type %in% c("depth_range","depth_planar_range"),]
+
+#remove bounding points
+atl_depth_all<-subset(atl_depth_all,!(species=="bound"))
+
+#log the dependent variable:
+#pac_long_all<-pac_long_all %>% mutate(area=log10(area))
+
+write.csv(atl_depth_all,"output/atl_depth_all.csv")
+
+attach(atl_depth_all)
+
+atl_depth_all$type<-factor(atl_depth_all$type,levels=c("depth_range","depth_planar_range"))
+
+depth_plot_atl<-ggplot(data=atl_depth_all,
+       aes(mid,area,color=type))+geom_point()+
+  geom_point(aes(y=area))+
+  geom_smooth(se=F,method=loess,size=2)+
+  theme_classic()+
+  #xlim(-110,45)+
+  scale_y_continuous(trans='log10')+
+  xlab("Mid-latitude (decimal degree)")+
+  ylab("range extent m/m2")+
+  geom_point(aes(x=0, y=0), colour="black")+
+  geom_point(aes(x=2.50, y=6.130000e+13), colour="black")+
+  geom_point(aes(x=5.0, y=7.620000e+14), colour="black")+
+  geom_point(aes(x=1979.00, y=8.590000e+14), colour="black")+
+  geom_point(aes(x=3958.50, y=8.590000e+14), colour="black")+
+  geom_point(aes(x=5937.75, y=3.790000e+14), colour="black")+
+  geom_point(aes(x=7917.00, y=0), colour="black")+
+  geom_point(aes(x=1979.00, y=3.958000e+03), colour="black")+
+  geom_point(aes(x=3958.50, y=7.917000e+03), colour="black")+
+  geom_point(aes(x=5937.75, y=3.958000e+03), colour="black")
+  
+depth_plot_atl
+
+ggsave(filename="depth_plot_atl.tiff",path="figs/")
+
+```
+
+atl lat richness
+```{r}
+attach(atl_lat_rich_combine4)
+
+
+atl_lat_rich_combine4plot<-ggplot(data=atl_lat_rich_combine4,aes(lat,rich,colour=type))+
+geom_line()+
+#geom_smooth(se=F,method=loess)+
+xlab(label="lat (dec deg)")+
+ylab("Richness")+
+theme_classic()
+atl_lat_rich_combine4plot
+
+#to save figure 
+ggsave(filename="atl_lat_rich_combine4plot.tiff",path="figs/")
+
+```
+
+pac lat rich
+```{r}
+attach(pac_temp_combine4)
+pac_temp_combine4plot<-ggplot(data=pac_temp_combine4,aes(lat,rich,colour=type))+
+geom_line()+
+#geom_smooth(se=F,method=loess)+
+xlab(label="Lat (dec deg)")+
+ylab("Richness")+
+theme_classic()
+pac_temp_combine4plot
+
+#to save figure 
+ggsave(filename="pac_temp_combine4plot.tiff",path="figs/")
+
+```
+
+pac long richness
+```{r}
+attach(pac_temp_combine2_long_adj)
+
+ggplot(pac_temp_combine2_long_adj,aes(x_adjust))+
+geom_line(aes(y=richness_long,color="richness_long"),size=1)+  
+geom_line(aes(y=max_rich,color="richness_geog"),size=1)+
+geom_line(aes(y=rich_2d,color="rich_2d"),size=1)+
+xlab(label="longitude (degrees)")+
+ylab("Richness")+
+theme_classic()
+
+
+ggsave(filename="pac_long_rich.tiff",path="figs/")
+
+```
 
 
 
+atl long richness
+```{r}
+
+attach(atl_long_rich_combine4)
+atl_long_rich_combine4plot<-ggplot(data=atl_long_rich_combine4,aes(long,rich,colour=type))+
+geom_line()+
+#geom_smooth(se=F,method=loess)+
+xlab(label="long (dec deg)")+
+ylab("Richness")+
+theme_classic()
+atl_long_rich_combine4plot
+
+#to save figure 
+ggsave(filename="atl_long_rich_combine4plot.tiff",path="figs/")
+
+```
+
+pac long rich
+```{r}
+
+attach(pac_temp_combine2_long_adj3)
+pac_temp_combine2_long_adj3plot<-ggplot(data=pac_temp_combine2_long_adj3,aes(long_adj,rich,colour=type))+
+geom_line()+
+#geom_smooth(se=F,method=loess)+
+xlab(label="Long (dec deg)")+
+ylab("Richness")+
+theme_classic()
+pac_temp_combine2_long_adj3plot
+
+#to save figure 
+ggsave(filename="pac_temp_combine2_long_adj3plot.tiff",path="figs/")
+```
+
+
+pac depth rich
+```{r}
+
+attach(pac_depth_rich3)
+pac_depth_rich3plot<-ggplot(data=pac_depth_rich3,aes(depth,rich,colour=type))+
+geom_line()+
+#geom_smooth(se=F,method=loess)+
+xlab(label="Depth (m)")+
+ylab("Richness")+
+theme_classic()
+pac_depth_rich3plot
+
+#to save figure 
+ggsave(filename="pac_depth_rich3plot.tiff",path="figs/")
+
+```
+
+
+atl depth rich
+```{r}
+
+#in excel, changed names of columns for atl_depth_rich3
+
+attach(atl_depth_rich3)
+
+atl_depth_rich3plot<-ggplot(data=atl_depth_rich3,aes(depth,rich,colour=type))+
+geom_line()+
+#geom_smooth(se=F,method=loess)+
+xlab(label="Depth (m)")+
+ylab("Richness")+
+theme_classic()
+atl_depth_rich3plot
+
+#to save figure 
+ggsave(filename="atl_depth_rich3plot.tiff",path="figs/")
+
+```

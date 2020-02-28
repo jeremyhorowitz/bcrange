@@ -14,6 +14,7 @@
 #something more similar to quadratic curves.
 
 
+
 attach(pac_lat_all3)
 
 three_lat_trends_pac<-ggplot(data=pac_lat_all3,aes(mid,area,colour=type))+
