@@ -63,6 +63,8 @@ ggsave(filename="lat_plot_atl.tiff",path="figs/")
 ```
 no species occur with mid-latitudes <-30 dec deg lat. the largest ranged species occur between -30 and 0 degrees lat, and then ranges decrease in area northerly. there is a dip in species range size at 30 deg lat. this can be explaained by the relatively large number of small-ranged, possibly endemic species occuring in the caribbean. there are also relatively large ranged species at this latitude but the caribbean species are greter in richness and therefore modify the trend. the trend does not change depending on the way ranges are considered, which means that latitude extent alone is sufficent to represent range area vs mid-lat relationships.
 
+caribb=seperate biome with separate evolutionary history
+
 ```{r}
 attach(atl_ranges3)
 pac_subset<-subset(atl_ranges3,ocean=="pac")
@@ -107,6 +109,8 @@ lat_plot_pac
 
 ggsave(filename="lat_plot_pac.tiff",path="figs/")
 ```
+relationship shape roughly relates to mid-domain effect, slightly right skewed with largest ranges being at ~-20deg. a small dip can also be seen at equator. cite paper that shows bimodal relationshpi between richness or range size in lat. shape is = for each range type meaning lat extent is enough to depict trends. relate this to map.
+
 
 atl long all
 ```{r}
@@ -153,6 +157,8 @@ long_plot_atl
 ggsave(filename="long_plot_atl.tiff",path="figs/")
 
 ```
+relationships relate to mid domain effect. trend shapes are = for each range type. only long is required to depict relationship.
+
 pac long
 ```{r}
 
@@ -200,6 +206,8 @@ long_plot_pac
 
 ggsave(filename="long_plot_pac.tiff",path="figs/")
 ```
+get the adj numbers. explain the dip at ~midway. shape = for each type. long is enough.
+
 ```{r}
 attach(atl_ranges3)
 pac_subset<-subset(atl_ranges3,ocean=="pac")
@@ -245,7 +253,7 @@ ggsave(filename="depth_plot_pac.tiff",path="figs/")
 
 
 ```
-
+shapes are different because 2d, including continent edges will result in a large range. 1d shape is ___.range relates perfect to mid domain. shapes are different betwen types but for both, ranges increase with mid lat to mid-lat of ocean, then decreases.
 
 ```{r}
 attach(atl_ranges3)
@@ -289,6 +297,7 @@ depth_plot_atl
 ggsave(filename="depth_plot_atl.tiff",path="figs/")
 
 ```
+shapes are different because 2d, including continent edges will result in a large range. 1d shape is ___.range relates perfect to mid domain. shapes are different betwen types but for both, ranges increase with mid lat to mid-lat of ocean, then decreases.
 
 atl lat richness
 ```{r}
