@@ -11,6 +11,11 @@ library(plotly)
 library(cowplot)
 library(sp)
 library(quantreg)
+install.packages("easypackages")
+library(easypackages)
+install.packages("patchwork")
+library(patchwork)
+
 ```
 
 
@@ -38,9 +43,10 @@ lat_plot_atl<-ggplot(data=atl_lat_all,
   geom_point(aes(y=area))+
   geom_smooth(se=F,method=loess,size=2)+
   theme_classic()+
+  theme(axis.title.x=element_blank(),
+        axis.text.x=element_blank())+
   xlim(-80,80)+
   scale_y_continuous(trans='log10')+
-  xlab("Mid-latitude (decimal degree)")+
   ylab("range extent m/m2")+
   geom_point(aes(x=-80, y=0), colour="black")+
   geom_point(aes(x=-40, y=1.445025e+14), colour="black")+
@@ -53,7 +59,7 @@ lat_plot_atl<-ggplot(data=atl_lat_all,
   geom_point(aes(x=-40, y=1.518389e+07), colour="black")+
   geom_point(aes(x=0, y=3.036779e+07), colour="black")+
   geom_point(aes(x=40, y=1.518389e+07), colour="black")
-  
+
 lat_plot_atl
 
 ggsave(filename="lat_plot_atl.tiff",path="figs/")
@@ -107,7 +113,14 @@ lat_plot_pac<-ggplot(data=pac_lat_all,
   
 lat_plot_pac
 
+lat_plot_pac_atl<-lat_plot_atl / lat_plot_pac
+
+
+lat_plot_pac_atl+
+ plot_layout(guides = 'collect')
+
 ggsave(filename="lat_plot_pac.tiff",path="figs/")
+ggsave(filename="lat_plot_pac_atl.tiff",path="figs/")
 ```
 relationship shape roughly relates to mid-domain effect, slightly right skewed with largest ranges being at ~-20deg. a small dip can also be seen at equator. cite paper that shows bimodal relationshpi between richness or range size in lat. shape is = for each range type meaning lat extent is enough to depict trends. relate this to map.
 
