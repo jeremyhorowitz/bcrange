@@ -6,14 +6,14 @@ output: html_document
 ---
 
 ```{r}
+install.packages("easypackages")
+install.packages("patchwork")
 library(tidyverse)
 library(plotly)
 library(cowplot)
 library(sp)
 library(quantreg)
-install.packages("easypackages")
 library(easypackages)
-install.packages("patchwork")
 library(patchwork)
 
 ```
@@ -112,6 +112,8 @@ lat_plot_pac<-ggplot(data=pac_lat_all,
 
   
 lat_plot_pac
+ggsave(filename="lat_plot_pac.tiff",path="figs/")
+
 
 lat_plot_pac_atl<-lat_plot_atl / lat_plot_pac
 
@@ -119,8 +121,7 @@ lat_plot_pac_atl<-lat_plot_atl / lat_plot_pac
 lat_plot_pac_atl+
  plot_layout(guides = 'collect')
 
-ggsave(filename="lat_plot_pac.tiff",path="figs/")
-ggsave(filename="lat_plot_pac_atl.tiff",path="figs/")
+ggsave(filename="lat_plot_pac_atl.tiff",path="figs/",width=8,height=6,dpi=300,units="in",device='tiff')
 ```
 relationship shape roughly relates to mid-domain effect, slightly right skewed with largest ranges being at ~-20deg. a small dip can also be seen at equator. cite paper that shows bimodal relationshpi between richness or range size in lat. shape is = for each range type meaning lat extent is enough to depict trends. relate this to map.
 
@@ -218,6 +219,17 @@ long_plot_pac<-ggplot(data=pac_long_all,
 long_plot_pac
 
 ggsave(filename="long_plot_pac.tiff",path="figs/")
+
+
+
+
+long_plot_pac_atl<-long_plot_atl / long_plot_pac
+
+
+long_plot_pac_atl+
+ plot_layout(guides = 'collect')
+
+ggsave(filename="long_plot_pac_atl.tiff",path="figs/",width=8,height=6,dpi=300,units="in",device='tiff')
 ```
 get the adj numbers. explain the dip at ~midway. shape = for each type. long is enough.
 
@@ -308,6 +320,15 @@ depth_plot_atl<-ggplot(data=atl_depth_all,
 depth_plot_atl
 
 ggsave(filename="depth_plot_atl.tiff",path="figs/")
+
+depth_plot_pac_atl<-depth_plot_atl / depth_plot_pac
+
+
+depth_plot_pac_atl+
+ plot_layout(guides = 'collect')
+
+ggsave(filename="depth_plot_pac_atl.tiff",path="figs/",width=8,height=6,dpi=300,units="in",device='tiff')
+```
 
 ```
 shapes are different because 2d, including continent edges will result in a large range. 1d shape is ___.range relates perfect to mid domain. shapes are different betwen types but for both, ranges increase with mid lat to mid-lat of ocean, then decreases.
